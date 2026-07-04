@@ -10,7 +10,7 @@ class WhisperEngine:
             device=settings.DEVICE,
             compute_type=settings.COMPUTE_TYPE,
             download_root=str(settings.MODELS_DIR),
-            local_files_only=True
+            local_files_only=settings.LOCAL_FILES_ONLY
         )
 
     def transcribe(self, path: str):
