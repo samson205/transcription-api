@@ -9,9 +9,9 @@ class Settings(BaseSettings):
     HF_TOKEN: str = ""
 
     MODEL_NAME: str = "medium"
-    DEVICE: str = "cpu"
-    COMPUTE_TYPE: str = "int8"
-    LOCAL_FILES_ONLY: bool = True
+    DEVICE: str = "cuda"
+    COMPUTE_TYPE: str = "int8_float16"
+    LOCAL_FILES_ONLY: bool = False
 
     MODELS_DIR: Path = BASE_DIR / "models"
 
