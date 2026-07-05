@@ -9,7 +9,7 @@ class WhisperEngine:
             settings.MODEL_NAME,
             device=settings.DEVICE,
             compute_type=settings.COMPUTE_TYPE,
-            download_root=str(settings.MODELS_DIR),
+            download_root=str(settings.MODELS_DIR / "whisper"),
             local_files_only=settings.LOCAL_FILES_ONLY
         )
 
@@ -18,6 +18,6 @@ class WhisperEngine:
             path,
             beam_size=7,
             vad_filter=True,
-            condition_on_previous_text=False,
+            condition_on_previous_text=True,
         )
     
