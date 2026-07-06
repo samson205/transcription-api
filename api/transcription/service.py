@@ -1,9 +1,9 @@
 from fastapi import UploadFile
 
 from api.transcription.schemas import Transcription
-from api.services.whisper_engine import WhisperEngine
-from api.services.diarization_engine import DiarizationEngine
-from api.services.segments_service import SegmentsService
+from api.engines.whisper import WhisperEngine
+from api.engines.diarization import DiarizationEngine
+from api.services.segments import SegmentsService
 from api.services.temp_storage import TempStorage
 
 

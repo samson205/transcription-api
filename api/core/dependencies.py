@@ -1,8 +1,8 @@
 from fastapi import Depends
 
 from api.transcription.service import TranscriptionService
-from api.services.whisper_engine import WhisperEngine
-from api.services.diarization_engine import DiarizationEngine
+from api.engines.whisper import WhisperEngine
+from api.engines.diarization import DiarizationEngine
 
 _whisper_engine = WhisperEngine()
 _diarization_engine = DiarizationEngine()
