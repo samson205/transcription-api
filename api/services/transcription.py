@@ -1,10 +1,9 @@
-from fastapi import UploadFile
+from pathlib import Path
 
-from api.transcription.schemas import Transcription
+from api.schemas.schemas import Transcription
 from api.engines.whisper import WhisperEngine
 from api.engines.diarization import DiarizationEngine
 from api.services.segments import SegmentsService
-from api.services.temp_storage import TempStorage
 
 
 class TranscriptionService:
@@ -12,13 +11,12 @@ class TranscriptionService:
         self._whisper = whisper
         self._diarization = diarization
 
-    def transcribe_file(self, file: UploadFile):
-        tmp_path = TempStorage.get_temp_file(file)
+    def transcribe_file(self, path: str):
         try:
-            segments, info = self._whisper.transcribe(str(tmp_path))
-            self._diarization.diarize_audio(str(tmp_path))
+            segments, info = self._whisper.transcribe(path)
+            self._diarization.diarize_audio(path)
         finally:
-            tmp_path.unlink(missing_ok=True)
+            Path(path).unlink(missing_ok=True)
         rebuild_segments = SegmentsService.rebuild_segments(segments)
         
         return Transcription(

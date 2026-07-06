@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 
-from api.transcription.router import router as t_router
+from api.routers.transcription_router import router as transcription_router
+from api.routers.tasks_router import router as tasks_router
 
 app = FastAPI()
-app.include_router(t_router)
+app.include_router(transcription_router)
+app.include_router(tasks_router)
 
 
 @app.get("/")
