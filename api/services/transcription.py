@@ -1,15 +1,14 @@
 from pathlib import Path
 
+from api.core.dependencies import get_diarization_engine, get_whisper_engine
 from api.schemas.schemas import Transcription
-from api.engines.whisper import WhisperEngine
-from api.engines.diarization import DiarizationEngine
 from api.services.segments import SegmentsService
 
 
 class TranscriptionService:
-    def __init__(self, whisper: WhisperEngine, diarization: DiarizationEngine) -> None:
-        self._whisper = whisper
-        self._diarization = diarization
+    def __init__(self) -> None:
+        self._whisper = get_whisper_engine()
+        self._diarization = get_diarization_engine()
 
     def transcribe_file(self, path: str):
         try:
