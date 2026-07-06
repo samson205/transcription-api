@@ -1,19 +1,42 @@
-from api.engines.whisper import WhisperEngine
-from api.engines.diarization import DiarizationEngine
+from functools import lru_cache
 
-_whisper_engine = None
-_diarization_engine = None
+from api.engines.whisper_engine import WhisperEngine
+from api.engines.diarization_engine import DiarizationEngine
+from api.services.transcription_service import TranscriptionService
+from api.services.diarization_service import DiarizationService
+from api.services.alignment_service import AlignmentService
+from api.services.conversation_service import ConversationService
 
 
+@lru_cache
 def get_whisper_engine() -> WhisperEngine:
-    global _whisper_engine
-    if _whisper_engine is None:
-        _whisper_engine = WhisperEngine()
-    return _whisper_engine
+    return WhisperEngine()
 
 
+@lru_cache
 def get_diarization_engine() -> DiarizationEngine:
-    global _diarization_engine
-    if _diarization_engine is None:
-        _diarization_engine = DiarizationEngine()
-    return _diarization_engine
+    return DiarizationEngine()
+
+
+@lru_cache
+def get_transcription_service() -> TranscriptionService:
+    return TranscriptionService(get_whisper_engine())
+
+
+@lru_cache
+def get_diarization_service() -> DiarizationService:
+    return DiarizationService(get_diarization_engine())
+
+
+@lru_cache
+def get_alignment_service() -> AlignmentService:
+    return AlignmentService()
+
+
+@lru_cache
+def get_conversation_service() -> ConversationService:
+    return ConversationService(
+        get_transcription_service(),
+        get_diarization_service(),
+        get_alignment_service(),
+    )

@@ -17,12 +17,10 @@ class DiarizationEngine:
         if not self._pipeline:
             return
         waveform, sample_rate = torchaudio.load(path)
-        output = self._pipeline(
+        return self._pipeline(
             {
                 "waveform": waveform,
                 "sample_rate": sample_rate,
             },
-            num_speakers=2
+            max_speakers=2
         )
-        for turn, _, speaker in output.itertracks(yield_label=True):
-            print(f"{speaker} speaks between t={turn.start:.3f}s and t={turn.end:.3f}s")

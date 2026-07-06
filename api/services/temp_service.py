@@ -5,7 +5,7 @@ from tempfile import NamedTemporaryFile
 from fastapi import UploadFile
 
 
-class TempStorage:
+class TempService:
     @staticmethod
     def get_temp_file(file: UploadFile) -> Path:
         suffix = Path(str(file.filename)).suffix
@@ -13,4 +13,8 @@ class TempStorage:
             shutil.copyfileobj(file.file, tmp_file)
             tmp_path = tmp_file.name
         return Path(tmp_path)
+    
+    @staticmethod
+    def delete_temp_file(path: str):
+        Path(path).unlink()
     
