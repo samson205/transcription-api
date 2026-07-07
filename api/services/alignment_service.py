@@ -1,4 +1,4 @@
-from api.schemas.schemas import SegmentSchema, SpeakerSegment, DialogueSegment
+from api.core.schemas import SegmentSchema, SpeakerSegment, DialogueSegment
 from api.services.operator_service import OperatorService
 
 

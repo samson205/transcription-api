@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File
 
-from api.schemas.schemas import BaseTaskResponse
+from api.core.schemas import BaseTaskResponse
 from api.services.task_service import TaskService
 from api.services.temp_service import TempService
 

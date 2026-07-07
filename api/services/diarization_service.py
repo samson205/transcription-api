@@ -1,7 +1,7 @@
 import numpy as np
 
 from api.engines.diarization_engine import DiarizationEngine
-from api.schemas.schemas import SpeakerSegment
+from api.core.schemas import SpeakerSegment
 
 
 class DiarizationService:
