@@ -40,11 +40,13 @@ RUN pip install \
 RUN pip install -r requirements.txt
 
 COPY api ./api
+COPY migrations migrations
 COPY .env .
+COPY alembic.ini .
 
 RUN useradd -m app
 
-RUN mkdir -p /home/app/models /home/app/temp \
+RUN mkdir -p /home/app/ml_models /home/app/temp \
     && chown -R app:app /home/app
 
 USER app

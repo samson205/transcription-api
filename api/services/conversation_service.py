@@ -1,5 +1,3 @@
-from fastapi import UploadFile
-
 from api.services.transcription_service import TranscriptionService
 from api.services.diarization_service import DiarizationService
 from api.services.alignment_service import AlignmentService
@@ -13,11 +11,12 @@ class ConversationService:
         self._diarization_service = diarization_service
         self._alignment_service = alignment_service
 
-    def process(self, path: str) -> ConversationResponse:
+    async def process(self, path: str) -> ConversationResponse:
         try:
             transcription = self._transcription_service.transcribe_file(str(path))
-            diarization = self._diarization_service.diarize(str(path))
-            conversation = self._alignment_service.align(transcription.segments, diarization)
+            diarization, embeddings = self._diarization_service.diarize(str(path))
+            conversation_raw = self._alignment_service.align(transcription.segments, diarization)
+            conversation = await self._alignment_service.match_operators(conversation_raw, embeddings)
         finally:
             TempService.delete_temp_file(path)
 

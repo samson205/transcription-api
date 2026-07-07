@@ -5,15 +5,18 @@ services:
     image: transcription-api:latest
     container_name: api
 
+    command: sh -c "alembic upgrade head && uvicorn api.main:app --host 0.0.0.0 --port 8000"
+
     ports:
       - "8000:8000"
 
     volumes:
-      - ./models:/home/app/models
+      - ./ml_models:/home/app/ml_models
       - temp:/home/app/temp
 
     depends_on:
-      - redis
+      db:
+        condition: service_healthy
 
     deploy:
       resources:
@@ -36,7 +39,7 @@ services:
       --loglevel=info
 
     volumes:
-      - ./models:/home/app/models
+      - ./ml_models:/home/app/ml_models
       - temp:/home/app/temp
 
     depends_on:
@@ -60,6 +63,23 @@ services:
     volumes:
       - redis_data:/data
 
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
+
 volumes:
+  postgres_data:
   redis_data:
   temp:

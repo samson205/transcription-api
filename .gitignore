@@ -226,4 +226,6 @@ __marimo__/
 media
 storage
 
-models
+ml_models
+
+temp
