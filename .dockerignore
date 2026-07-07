@@ -1,0 +1,14 @@
+.git
+.gitignore
+
+venv
+.venv
+
+__pycache__
+
+models
+
+.idea
+.vscode
+
+*.pyc

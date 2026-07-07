@@ -8,6 +8,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     HF_TOKEN: str = ""
     REDIS_URL: str = ""
+    TEMP_DIR: str = "/home/app/temp"
 
     MODEL_NAME: str = "medium"
     DEVICE: str = "cuda"

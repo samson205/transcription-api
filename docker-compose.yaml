@@ -1,0 +1,65 @@
+services:
+
+  api:
+    build: .
+    image: transcription-api:latest
+    container_name: api
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./models:/home/app/models
+      - temp:/home/app/temp
+
+    depends_on:
+      - redis
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  worker:
+    build: .
+    image: transcription-api:latest
+    container_name: worker
+
+    command: >
+      celery
+      -A api.core.celery:celery
+      worker
+      --pool=solo
+      --loglevel=info
+
+    volumes:
+      - ./models:/home/app/models
+      - temp:/home/app/temp
+
+    depends_on:
+      - redis
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  redis:
+    image: redis:8-alpine
+    container_name: redis
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
+  temp:
