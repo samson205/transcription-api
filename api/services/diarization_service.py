@@ -9,26 +9,29 @@ class DiarizationService:
         self._engine = engine
 
     def diarize(self, path: str) -> tuple[list[SpeakerSegment], dict]:
-        annotation = self._engine.diarize_audio(path)
+        output = self._engine.diarize_audio(path)
         result = []
         speaker_embeddings = {}
-        if not annotation:
+        if not output:
             return result, speaker_embeddings
         
-        if hasattr(annotation[0], "features"):
-            for speaker in annotation[0].labels():
-                speaker_segments = annotation[0].label_timeline(speaker)
-                
-                try:
-                    features_for_speaker = annotation[0].features.crop(speaker_segments)
-                    
-                    if len(features_for_speaker) > 0:
-                        mean_embedding = np.mean(features_for_speaker, axis=0)
-                        speaker_embeddings[speaker] = mean_embedding
-                except Exception as e:
-                    print(f"Не удалось извлечь эмбеддинг для {speaker}: {e}")
+        if isinstance(output, tuple):
+            annotation = output[0]
+            embeddings = output[1]
+        else:
+            annotation = output
+            embeddings = None
 
-        for turn, _, speaker in annotation[0].itertracks(yield_label=True):
+        if embeddings is not None and isinstance(embeddings, np.ndarray):
+            labels = list(annotation.labels())
+
+            for i, speaker in enumerate(labels):
+                try:
+                    speaker_embeddings[speaker] = embeddings[i]
+                except Exception:
+                    print("Ошибка индексации")
+
+        for turn, _, speaker in annotation.itertracks(yield_label=True):
             result.append(
                 SpeakerSegment(
                     start=turn.start,
