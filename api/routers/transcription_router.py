@@ -12,4 +12,4 @@ async def transcribe(
     file: UploadFile = File(...),
 ):
     tmp_path = TempService.get_temp_file(file)
-    return BaseTaskResponse(task_id=TaskService.create(str(tmp_path)))
+    return BaseTaskResponse(task_id=TaskService.transcribe_task(str(tmp_path)))

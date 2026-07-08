@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, create_async_engine
 
@@ -16,9 +15,4 @@ class Base(DeclarativeBase):
 @asynccontextmanager
 async def database_session():
     async with session_maker() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
+        yield session

@@ -6,7 +6,7 @@ from api.tasks.transcription import transcribe_task
 
 class TaskService:
     @staticmethod
-    def create(path: str):
+    def transcribe_task(path: str):
         task = transcribe_task.delay(path)
         return task.id
     

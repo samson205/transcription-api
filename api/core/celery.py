@@ -17,3 +17,4 @@ celery.conf.update(
 )
 
 import api.tasks.transcription
+import api.tasks.operator
