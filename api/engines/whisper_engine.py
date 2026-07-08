@@ -9,11 +9,13 @@ class WhisperEngine:
 
     def _load_model(self):
         if self._model is None:
+            models_dir = settings.MODELS_DIR / "whisper"
+            models_dir.mkdir(exist_ok=True, parents=True)
             self._model = WhisperModel(
                 settings.MODEL_NAME,
                 device=settings.DEVICE,
                 compute_type=settings.COMPUTE_TYPE,
-                download_root=str(settings.MODELS_DIR / "whisper"),
+                download_root=str(models_dir),
                 local_files_only=settings.LOCAL_FILES_ONLY
             )
         return self._model
