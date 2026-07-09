@@ -1,10 +1,8 @@
-import asyncio
-
 from api.repositories.operator_repository import OperatorRepository
 from api.services.temp_service import TempService
 from api.services.embedding_service import EmbeddingService
 from api.models.operator import Operator
-from api.core.schemas import OperatorCreate
+from api.schemas.operator import OperatorCreate
 
 
 class OperatorService:

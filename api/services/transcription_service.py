@@ -2,7 +2,7 @@ from typing import Iterable
 
 from faster_whisper.transcribe import Segment
 
-from api.core.schemas import TranscriptionSchema
+from api.schemas.transcription import TranscriptionSchema
 from api.engines.whisper_engine import WhisperEngine
 
 

@@ -1,8 +1,6 @@
-from typing import Annotated, Any
-from datetime import datetime
+from typing import Annotated
 
-from fastapi import Form
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 
 
 class SegmentSchema(BaseModel):
@@ -23,10 +21,6 @@ class SpeakerSegment(BaseModel):
     speaker: Annotated[str, Field(...)]
 
 
-class BaseTaskResponse(BaseModel):
-    task_id: Annotated[str, Field(...)]
-
-
 class DialogueSegment(SpeakerSegment):
     text: Annotated[str, Field(...)]
     
@@ -35,24 +29,3 @@ class ConversationResponse(BaseModel):
     language: Annotated[str, Field(...)]
     duration: Annotated[float, Field(...)]
     segments: Annotated[list[DialogueSegment], Field(...)]
-
-
-class TaskResponse(BaseTaskResponse):
-    task_id: Annotated[str, Field(...)]
-    state: Annotated[str, Field(...)]
-    result: Annotated[Any | None, Field(...)]
-
-
-class OperatorCreate(BaseModel):
-    name: Annotated[str, Field(...)]
-
-    @classmethod
-    def as_form(cls, name: Annotated[str, Form(...)]):
-        return cls(name=name)
-    
-
-class OperatorRead(BaseModel):
-    name: Annotated[str, Field(...)]
-    created_at: Annotated[datetime, Field(...)]
-
-    model_config = ConfigDict(from_attributes=True)

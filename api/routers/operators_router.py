@@ -2,9 +2,9 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 
 from api.services.operator_service import OperatorService
 from api.services.temp_service import TempService
+from api.services.task_service import TaskService
 from api.core.dependencies import get_operator_service_for_api
-from api.core.schemas import OperatorCreate, OperatorRead
-from api.tasks.operator import extract_operator_embedding_task
+from api.schemas.operator import OperatorCreate, OperatorRead
 
 router = APIRouter(prefix="/operators", tags=["operators"])
 
@@ -17,10 +17,10 @@ async def create_operator(
 ):
     tmp_path = TempService.get_temp_file(file)
     operator = await service.register(data)
-    task = extract_operator_embedding_task.delay(operator.id, str(tmp_path))
+    task_id = TaskService.extract_operator_embedding_task(operator.id, str(tmp_path))
     return {
         "operator_id": operator.id,
-        "task_id": task.id,
+        "task_id": task_id,
     }
 
 

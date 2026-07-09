@@ -1,4 +1,4 @@
-from api.core.schemas import SegmentSchema, SpeakerSegment, DialogueSegment
+from api.schemas.transcription import SegmentSchema, SpeakerSegment, DialogueSegment
 from api.services.operator_service import OperatorService
 
 
@@ -67,11 +67,11 @@ class AlignmentService:
                     speaker_mapping[sp_2] = f"Оператор ({op_name}) [Неуверенно]"
                 else:
                     if dist_1 < dist_2:
-                        speaker_mapping[sp_1] = "Оператор [Неизвестен]"
+                        speaker_mapping[sp_1] = "Оператор [Неизвестен / Неуверенно]"
                         speaker_mapping[sp_2] = "Клиент"
                     else:
                         speaker_mapping[sp_1] = "Клиент"
-                        speaker_mapping[sp_2] = "Оператор [Неизвестен]"
+                        speaker_mapping[sp_2] = "Оператор [Неизвестен / Неуверенно]"
 
         else:
             for speaker_id, data in scores.items():

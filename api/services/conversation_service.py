@@ -2,7 +2,7 @@ from api.services.transcription_service import TranscriptionService
 from api.services.diarization_service import DiarizationService
 from api.services.alignment_service import AlignmentService
 from api.services.temp_service import TempService
-from api.core.schemas import ConversationResponse
+from api.schemas.transcription import ConversationResponse
 
 
 class ConversationService:
