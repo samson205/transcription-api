@@ -1,35 +1,32 @@
 from api.repositories.operator_repository import OperatorRepository
-from api.services.temp_service import TempService
-from api.services.embedding_service import EmbeddingService
-from api.models.operator import Operator
+from api.models.operator_model import Operator
 from api.schemas.operator import OperatorCreate
 
 
 class OperatorService:
-    def __init__(self, operator_repository: OperatorRepository, embedding_service: EmbeddingService | None) -> None:
+    def __init__(self, operator_repository: OperatorRepository) -> None:
         self._repo = operator_repository
-        self._embedding_service = embedding_service
 
     async def register(self, data: OperatorCreate) -> Operator:
+        """Создает нового оператора в БД"""
         return await self._repo.create(data.name)
     
     async def get_by_id(self, operator_id: int) -> Operator:
+        """Получает оператора по ID"""
         result = await self._repo.get_by_id(operator_id)
         if not result:
             raise ValueError("Operator not found")
         return result
     
-    async def update_embedding(self, operator_id: int, file_path: str) -> Operator:
-        if self._embedding_service is None:
-            raise Exception
-        try:
-            embedding = self._embedding_service.extract_embedding(file_path)
-            operator = await self._repo.update_embedding(operator_id, embedding)
-            return operator
-        finally:
-            TempService.delete_temp_file(file_path)
+    async def update_embedding(self, operator_id: int, embedding: list[float]) -> None:
+        """Обновляет эмбеддинг оператора в БД"""
+        result = await self._repo.update_embedding(operator_id, embedding)
+        if not result:
+            raise ValueError("Operator not found")
+        return None
 
-    async def find_matching_operator(self, embedding: list[float]):
+    async def find_matching_operator(self, embedding: list[float]) -> tuple[Operator | None, float]:
+        """Находит лучшее совпадение оператора по эмбеддингу"""
         result = await self._repo.find_nearest(embedding)
         if result:
             matched_operator, distance = result

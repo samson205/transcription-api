@@ -16,5 +16,5 @@ celery.conf.update(
     result_expires=3600,
 )
 
-import api.tasks.transcription
-import api.tasks.operator
+import api.tasks.transcription_tasks
+import api.tasks.operator_tasks

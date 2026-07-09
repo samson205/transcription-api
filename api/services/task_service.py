@@ -1,8 +1,8 @@
 from celery.result import AsyncResult
 
 from api.core.celery import celery
-from api.tasks.transcription import transcribe_task
-from api.tasks.operator import extract_operator_embedding_task
+from api.tasks.transcription_tasks import transcribe_task
+from api.tasks.operator_tasks import extract_operator_embedding_task
 
 
 class TaskService:

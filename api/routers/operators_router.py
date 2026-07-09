@@ -3,7 +3,7 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 from api.services.operator_service import OperatorService
 from api.services.temp_service import TempService
 from api.services.task_service import TaskService
-from api.core.dependencies import get_operator_service_for_api
+from api.core.dependencies import get_operator_service
 from api.schemas.operator import OperatorCreate, OperatorRead
 
 router = APIRouter(prefix="/operators", tags=["operators"])
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/operators", tags=["operators"])
 async def create_operator(
     data: OperatorCreate = Depends(OperatorCreate.as_form),
     file: UploadFile = File(...),
-    service: OperatorService = Depends(get_operator_service_for_api)
+    service: OperatorService = Depends(get_operator_service)
 ):
     tmp_path = TempService.get_temp_file(file)
     operator = await service.register(data)
@@ -27,7 +27,7 @@ async def create_operator(
 @router.get("/{operator_id}", response_model=OperatorRead)
 async def get_operator_by_id(
     operator_id: int,
-    service: OperatorService = Depends(get_operator_service_for_api)
+    service: OperatorService = Depends(get_operator_service)
 ):
     try:
         result = await service.get_by_id(operator_id)
