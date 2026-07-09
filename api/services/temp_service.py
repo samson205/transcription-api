@@ -19,8 +19,7 @@ class TempService:
             shutil.copyfileobj(file.file, buffer)
 
         return file_path
-    
+
     @staticmethod
     def delete_temp_file(path: str):
         Path(path).unlink(missing_ok=True)
-    

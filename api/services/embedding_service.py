@@ -10,11 +10,14 @@ class EmbeddingService:
 
         if not output:
             raise ValueError("Failed to process audiofile")
-        
+
         embeddings_array = output[1]
         if embeddings_array is None or len(embeddings_array) == 0:
-            raise ValueError("Diarization pipeline failed to extract a single embedding")
-        
-        raw_embedding = embeddings_array[0] if embeddings_array.ndim > 1 else embeddings_array
+            raise ValueError(
+                "Diarization pipeline failed to extract a single embedding"
+            )
+
+        raw_embedding = (
+            embeddings_array[0] if embeddings_array.ndim > 1 else embeddings_array
+        )
         return raw_embedding.tolist()
-    

@@ -22,13 +22,12 @@ class DiarizationEngine:
                 repo_type="model",
                 cache_dir=str(pyannote_cache_dir),
                 token=settings.HF_TOKEN,
-                local_files_only=settings.LOCAL_FILES_ONLY
+                local_files_only=settings.LOCAL_FILES_ONLY,
             )
             config_path = Path(model_dir) / "config.yaml"
 
             self._pipeline = Pipeline.from_pretrained(
-                config_path,
-                use_auth_token=settings.HF_TOKEN
+                config_path, use_auth_token=settings.HF_TOKEN
             )
             self._pipeline.to(torch.device(settings.DEVICE))
         return self._pipeline
@@ -42,5 +41,5 @@ class DiarizationEngine:
                 "sample_rate": sample_rate,
             },
             max_speakers=2,
-            return_embeddings=True
+            return_embeddings=True,
         )

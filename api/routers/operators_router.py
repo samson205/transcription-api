@@ -13,7 +13,7 @@ router = APIRouter(prefix="/operators", tags=["operators"])
 async def create_operator(
     data: OperatorCreate = Depends(OperatorCreate.as_form),
     file: UploadFile = File(...),
-    service: OperatorService = Depends(get_operator_service)
+    service: OperatorService = Depends(get_operator_service),
 ):
     tmp_path = TempService.get_temp_file(file)
     operator = await service.register(data)
@@ -26,15 +26,10 @@ async def create_operator(
 
 @router.get("/{operator_id}", response_model=OperatorRead)
 async def get_operator_by_id(
-    operator_id: int,
-    service: OperatorService = Depends(get_operator_service)
+    operator_id: int, service: OperatorService = Depends(get_operator_service)
 ):
     try:
         result = await service.get_by_id(operator_id)
         return result
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

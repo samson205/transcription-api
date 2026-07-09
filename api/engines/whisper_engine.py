@@ -16,7 +16,7 @@ class WhisperEngine:
                 device=settings.DEVICE,
                 compute_type=settings.COMPUTE_TYPE,
                 download_root=str(models_dir),
-                local_files_only=settings.LOCAL_FILES_ONLY
+                local_files_only=settings.LOCAL_FILES_ONLY,
             )
         return self._model
 
@@ -28,4 +28,3 @@ class WhisperEngine:
             vad_filter=True,
             condition_on_previous_text=True,
         )
-    

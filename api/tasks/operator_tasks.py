@@ -7,6 +7,8 @@ from api.core.dependencies import get_operator_voice_orchestrator
 def extract_operator_embedding_task(operator_id: int, file_path: str):
     orchestrator = get_operator_voice_orchestrator()
     try:
-        return run_async_coro(orchestrator.process_and_register_voice(operator_id, file_path))
+        return run_async_coro(
+            orchestrator.process_and_register_voice(operator_id, file_path)
+        )
     except Exception:
         return {"status": "failed", "operator_id": operator_id}

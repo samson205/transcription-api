@@ -10,14 +10,14 @@ class OperatorService:
     async def register(self, data: OperatorCreate) -> Operator:
         """Создает нового оператора в БД"""
         return await self._repo.create(data.name)
-    
+
     async def get_by_id(self, operator_id: int) -> Operator:
         """Получает оператора по ID"""
         result = await self._repo.get_by_id(operator_id)
         if not result:
             raise ValueError("Operator not found")
         return result
-    
+
     async def update_embedding(self, operator_id: int, embedding: list[float]) -> None:
         """Обновляет эмбеддинг оператора в БД"""
         result = await self._repo.update_embedding(operator_id, embedding)
@@ -25,11 +25,13 @@ class OperatorService:
             raise ValueError("Operator not found")
         return None
 
-    async def find_matching_operator(self, embedding: list[float]) -> tuple[Operator | None, float]:
+    async def find_matching_operator(
+        self, embedding: list[float]
+    ) -> tuple[Operator | None, float]:
         """Находит лучшее совпадение оператора по эмбеддингу"""
         result = await self._repo.find_nearest(embedding)
         if result:
             matched_operator, distance = result
             return matched_operator, distance
-            
+
         return None, 1.0

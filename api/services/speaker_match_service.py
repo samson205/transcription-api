@@ -6,7 +6,9 @@ class SpeakerMatchService:
     def __init__(self, operator_service: OperatorService) -> None:
         self._operator_service = operator_service
 
-    async def match_operators(self, segments: list[DialogueSegment], embeddings: dict) -> list[DialogueSegment]:
+    async def match_operators(
+        self, segments: list[DialogueSegment], embeddings: dict
+    ) -> list[DialogueSegment]:
         """Сопоставляет голоса из транскрипции с эмбеддингами операторов из БД"""
         threshold = 0.4
         absolte_max_dist = 0.6
@@ -16,7 +18,9 @@ class SpeakerMatchService:
             if hasattr(embedding_vector, "tolist"):
                 embedding_vector = embedding_vector.tolist()
 
-            operator, distance = await self._operator_service.find_matching_operator(embedding_vector)
+            operator, distance = await self._operator_service.find_matching_operator(
+                embedding_vector
+            )
             scores[speaker_id] = {"operator": operator, "distance": distance}
 
         if len(scores) == 2:
@@ -33,11 +37,19 @@ class SpeakerMatchService:
                 speaker_mapping[sp_1] = "Клиент"
                 speaker_mapping[sp_2] = f"Оператор ({op_name})"
             else:
-                if dist_1 < dist_2 and dist_1 <= absolte_max_dist and scores[sp_1]["operator"]:
+                if (
+                    dist_1 < dist_2
+                    and dist_1 <= absolte_max_dist
+                    and scores[sp_1]["operator"]
+                ):
                     op_name = scores[sp_1]["operator"].name
                     speaker_mapping[sp_1] = f"Оператор ({op_name}) [Неуверенно]"
                     speaker_mapping[sp_2] = "Клиент"
-                elif dist_2 < dist_1 and dist_2 <= absolte_max_dist and scores[sp_2]["operator"]:
+                elif (
+                    dist_2 < dist_1
+                    and dist_2 <= absolte_max_dist
+                    and scores[sp_2]["operator"]
+                ):
                     op_name = scores[sp_2]["operator"].name
                     speaker_mapping[sp_1] = "Клиент"
                     speaker_mapping[sp_2] = f"Оператор ({op_name}) [Неуверенно]"
@@ -59,7 +71,6 @@ class SpeakerMatchService:
         matched_segments = []
         for segment in segments:
             resolved_role = speaker_mapping.get(segment.speaker, "Неизвестный")
-            updated_segment = segment.model_copy(update={"speaker":resolved_role})
+            updated_segment = segment.model_copy(update={"speaker": resolved_role})
             matched_segments.append(updated_segment)
         return matched_segments
-    

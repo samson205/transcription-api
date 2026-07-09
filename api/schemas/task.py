@@ -11,4 +11,3 @@ class TaskResponse(BaseTaskResponse):
     task_id: Annotated[str, Field(...)]
     state: Annotated[str, Field(...)]
     result: Annotated[Any | None, Field(...)]
-    

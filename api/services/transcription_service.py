@@ -13,13 +13,13 @@ class TranscriptionService:
     def transcribe_file(self, path: str):
         segments, info = self._whisper.transcribe(path)
         rebuild_segments = self._rebuild_segments(segments)
-        
+
         return TranscriptionSchema(
             language=info.language,
             duration=round(info.duration, 1),
-            segments=rebuild_segments
+            segments=rebuild_segments,
         )
-    
+
     @staticmethod
     def _rebuild_segments(segments: Iterable[Segment]):
         result = []
@@ -30,7 +30,7 @@ class TranscriptionService:
                 current = {
                     "start": segment.start,
                     "end": segment.end,
-                    "text": segment.text.strip()
+                    "text": segment.text.strip(),
                 }
             else:
                 current["end"] = segment.end
@@ -42,5 +42,5 @@ class TranscriptionService:
 
         if current:
             result.append(current)
-        
+
         return result

@@ -23,7 +23,7 @@ class SpeakerSegment(BaseModel):
 
 class DialogueSegment(SpeakerSegment):
     text: Annotated[str, Field(...)]
-    
+
 
 class ConversationResponse(BaseModel):
     language: Annotated[str, Field(...)]

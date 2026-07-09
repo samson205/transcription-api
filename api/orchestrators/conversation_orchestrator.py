@@ -7,7 +7,13 @@ from api.schemas.transcription import ConversationResponse
 
 
 class ConversationOrchestrator:
-    def __init__(self, transcription_service: TranscriptionService, diarization_service: DiarizationService, alignment_service: AlignmentService, speaker_match_service: SpeakerMatchService) -> None:
+    def __init__(
+        self,
+        transcription_service: TranscriptionService,
+        diarization_service: DiarizationService,
+        alignment_service: AlignmentService,
+        speaker_match_service: SpeakerMatchService,
+    ) -> None:
         self._transcription_service = transcription_service
         self._diarization_service = diarization_service
         self._alignment_service = alignment_service
@@ -18,14 +24,17 @@ class ConversationOrchestrator:
         try:
             transcription = self._transcription_service.transcribe_file(str(path))
             diarization, embeddings = self._diarization_service.diarize(str(path))
-            conversation_raw = self._alignment_service.align(transcription.segments, diarization)
-            conversation = await self._speaker_match_service.match_operators(conversation_raw, embeddings)
+            conversation_raw = self._alignment_service.align(
+                transcription.segments, diarization
+            )
+            conversation = await self._speaker_match_service.match_operators(
+                conversation_raw, embeddings
+            )
         finally:
             TempService.delete_temp_file(path)
 
         return ConversationResponse(
             language=transcription.language,
             duration=transcription.duration,
-            segments=conversation
+            segments=conversation,
         )
-    

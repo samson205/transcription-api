@@ -14,7 +14,7 @@ class DiarizationService:
         speaker_embeddings = {}
         if not output:
             return result, speaker_embeddings
-        
+
         if isinstance(output, tuple):
             annotation = output[0]
             embeddings = output[1]
@@ -33,11 +33,6 @@ class DiarizationService:
 
         for turn, _, speaker in annotation.itertracks(yield_label=True):
             result.append(
-                SpeakerSegment(
-                    start=turn.start,
-                    end=turn.end,
-                    speaker=speaker
-                )
+                SpeakerSegment(start=turn.start, end=turn.end, speaker=speaker)
             )
         return result, speaker_embeddings
-    

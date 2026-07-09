@@ -2,11 +2,7 @@ from celery import Celery
 
 from api.core.config import settings
 
-celery = Celery(
-    "transcription",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL
-)
+celery = Celery("transcription", broker=settings.REDIS_URL, backend=settings.REDIS_URL)
 
 celery.conf.update(
     task_serializer="json",

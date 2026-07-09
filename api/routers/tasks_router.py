@@ -9,7 +9,7 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(task_id: str):
     task = TaskService.status(task_id)
-    
+
     task_result = None
     if task.ready():
         if task.state == "SUCCESS":

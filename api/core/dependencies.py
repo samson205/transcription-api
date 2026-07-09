@@ -22,6 +22,7 @@ def get_shared_whisper_engine() -> WhisperEngine:
         _WHISPER_ENGINE._load_model()
     return _WHISPER_ENGINE
 
+
 def get_shared_diarization_engine() -> DiarizationEngine:
     global _DIARIZATION_ENGINE
     if _DIARIZATION_ENGINE is None:
@@ -53,20 +54,20 @@ def get_operator_voice_orchestrator() -> OperatorVoiceOrchestrator:
 def get_conversation_orchestrator() -> ConversationOrchestrator:
     whisper_engine = get_shared_whisper_engine()
     diarization_engine = get_shared_diarization_engine()
-    
+
     transcription_service = TranscriptionService(whisper_engine)
     diarization_service = DiarizationService(diarization_engine)
-    
+
     operator_repo = OperatorRepository(database_session)
     operator_service = OperatorService(operator_repo)
-    
+
     alignment_service = AlignmentService()
 
     speaker_match_service = SpeakerMatchService(operator_service)
-    
+
     return ConversationOrchestrator(
         transcription_service,
         diarization_service,
         alignment_service,
-        speaker_match_service
+        speaker_match_service,
     )
