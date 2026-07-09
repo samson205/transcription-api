@@ -1,6 +1,7 @@
-from typing import Annotated
+from typing import Annotated, Iterable
 
 from pydantic import BaseModel, Field
+from faster_whisper.transcribe import Segment
 
 
 class SegmentSchema(BaseModel):
@@ -9,10 +10,10 @@ class SegmentSchema(BaseModel):
     text: Annotated[str, Field(...)]
 
 
-class TranscriptionSchema(BaseModel):
+class RawTranscriptionSchema(BaseModel):
     language: Annotated[str, Field(...)]
     duration: Annotated[float, Field(...)]
-    segments: Annotated[list[SegmentSchema], Field(...)]
+    segments: Annotated[Iterable[Segment], Field(...)]
 
 
 class SpeakerSegment(BaseModel):

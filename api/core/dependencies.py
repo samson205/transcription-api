@@ -7,6 +7,7 @@ from api.services.alignment_service import AlignmentService
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
 from api.services.speaker_match_service import SpeakerMatchService
+from api.processors.segment_aggregator import SegmentAggregator
 from api.repositories.operator_repository import OperatorRepository
 from api.orchestrators.operator_voice_orchestrator import OperatorVoiceOrchestrator
 from api.orchestrators.conversation_orchestrator import ConversationOrchestrator
@@ -31,6 +32,14 @@ def get_shared_diarization_engine() -> DiarizationEngine:
     return _DIARIZATION_ENGINE
 
 
+def get_transcription_service() -> TranscriptionService:
+    return TranscriptionService(get_shared_whisper_engine())
+
+
+def get_diarization_service() -> DiarizationService:
+    return DiarizationService(get_shared_diarization_engine())
+
+
 def get_embedding_service() -> EmbeddingService:
     return EmbeddingService(get_shared_diarization_engine())
 
@@ -47,27 +56,23 @@ def get_alignment_service() -> AlignmentService:
     return AlignmentService()
 
 
+def get_speaker_match_service() -> SpeakerMatchService:
+    return SpeakerMatchService(get_operator_service())
+
+
+def get_segment_aggregator() -> SegmentAggregator:
+    return SegmentAggregator()
+
+
 def get_operator_voice_orchestrator() -> OperatorVoiceOrchestrator:
     return OperatorVoiceOrchestrator(get_operator_service(), get_embedding_service())
 
 
 def get_conversation_orchestrator() -> ConversationOrchestrator:
-    whisper_engine = get_shared_whisper_engine()
-    diarization_engine = get_shared_diarization_engine()
-
-    transcription_service = TranscriptionService(whisper_engine)
-    diarization_service = DiarizationService(diarization_engine)
-
-    operator_repo = OperatorRepository(database_session)
-    operator_service = OperatorService(operator_repo)
-
-    alignment_service = AlignmentService()
-
-    speaker_match_service = SpeakerMatchService(operator_service)
-
     return ConversationOrchestrator(
-        transcription_service,
-        diarization_service,
-        alignment_service,
-        speaker_match_service,
+        get_transcription_service(),
+        get_diarization_service(),
+        get_alignment_service(),
+        get_speaker_match_service(),
+        get_segment_aggregator(),
     )
