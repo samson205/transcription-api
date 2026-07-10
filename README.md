@@ -54,16 +54,34 @@ api/
 
 ---
 
+## Hugging Face
+
+Для работы проекта необходимо получить токен Hugging Face.
+
+1. Зарегистрируйтесь на https://huggingface.co
+2. Создайте токен доступа (Read).
+3. Примите условия использования моделей:
+   - pyannote/speaker-diarization-3.1
+   - pyannote/segmentation-3.0
+4. Создайте файл `.env` на основе `.env.example`
+5. Добавьте токен в `.env`:
+
+```env
+HF_TOKEN=your_huggingface_token
+```
+
+---
+
 ## Запуск
 
 ### 1. Клонировать репозиторий
 
 ```bash
-git clone <repository_url>
+git clone https://github.com/samson205/transcription-api
 cd transcription-api
 ```
 
-### 2. Создать файл `.env` на основе `.env.example`
+### 2. Заполнить файл `.env`
 
 Пример:
 
