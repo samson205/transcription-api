@@ -1,4 +1,5 @@
 from api.core.database import database_session
+from api.core.config import settings
 from api.engines.whisper_engine import WhisperEngine
 from api.engines.diarization_engine import DiarizationEngine
 from api.services.transcription_service import TranscriptionService
@@ -19,7 +20,7 @@ _DIARIZATION_ENGINE = None
 def get_shared_whisper_engine() -> WhisperEngine:
     global _WHISPER_ENGINE
     if _WHISPER_ENGINE is None:
-        _WHISPER_ENGINE = WhisperEngine(word_timestamps=True)
+        _WHISPER_ENGINE = WhisperEngine(word_timestamps=settings.WORD_TIMESTAMPS)
         _WHISPER_ENGINE._load_model()
     return _WHISPER_ENGINE
 
