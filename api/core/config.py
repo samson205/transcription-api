@@ -18,7 +18,6 @@ class Settings(BaseSettings):
     LOCAL_FILES_ONLY: bool = False
     WORD_TIMESTAMPS: bool = True
 
-
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

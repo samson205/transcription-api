@@ -8,8 +8,10 @@ from api.services.alignment_service import AlignmentService
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
 from api.services.speaker_match_service import SpeakerMatchService
+from api.services.conversation_service import ConversationService
 from api.processors.segment_aggregator import SegmentAggregator
 from api.repositories.operator_repository import OperatorRepository
+from api.repositories.conversation_repository import ConversationRepository
 from api.orchestrators.operator_voice_orchestrator import OperatorVoiceOrchestrator
 from api.orchestrators.conversation_orchestrator import ConversationOrchestrator
 
@@ -69,6 +71,14 @@ def get_operator_voice_orchestrator() -> OperatorVoiceOrchestrator:
     return OperatorVoiceOrchestrator(get_operator_service(), get_embedding_service())
 
 
+def get_conversation_repository() -> ConversationRepository:
+    return ConversationRepository(database_session)
+
+
+def get_conversation_service() -> ConversationService:
+    return ConversationService(get_conversation_repository())
+
+
 def get_conversation_orchestrator() -> ConversationOrchestrator:
     return ConversationOrchestrator(
         get_transcription_service(),
@@ -76,4 +86,5 @@ def get_conversation_orchestrator() -> ConversationOrchestrator:
         get_alignment_service(),
         get_speaker_match_service(),
         get_segment_aggregator(),
+        get_conversation_service(),
     )

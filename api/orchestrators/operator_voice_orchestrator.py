@@ -12,11 +12,10 @@ class OperatorVoiceOrchestrator:
 
     async def process_and_register_voice(
         self, operator_id: int, file_path: str
-    ) -> dict:
+    ) -> None:
         """Обрабатывает голос и добавляет эмбеддинг в БД"""
         try:
             embedding = self._embedding_service.extract_embedding(file_path)
             await self._operator_service.update_embedding(operator_id, embedding)
-            return {"status": "success", "operator_id": operator_id}
         finally:
             TempService.delete_temp_file(file_path)

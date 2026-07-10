@@ -17,7 +17,7 @@ async def create_operator(
 ):
     tmp_path = TempService.get_temp_file(file)
     operator = await service.register(data)
-    task_id = TaskService.extract_operator_embedding_task(operator.id, str(tmp_path))
+    task_id = TaskService.create_extract_operator_embedding_task(operator.id, str(tmp_path))
     return {
         "operator_id": operator.id,
         "task_id": task_id,
@@ -29,7 +29,6 @@ async def get_operator_by_id(
     operator_id: int, service: OperatorService = Depends(get_operator_service)
 ):
     try:
-        result = await service.get_by_id(operator_id)
-        return result
+        return await service.get_by_id(operator_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

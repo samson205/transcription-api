@@ -9,6 +9,7 @@ from alembic import context
 
 from api.core.database import Base
 from api.models.operator_model import Operator
+from api.models.conversation_model import Conversation
 from api.core.config import settings
 
 # this is the Alembic Config object, which provides

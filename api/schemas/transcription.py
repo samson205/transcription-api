@@ -1,6 +1,8 @@
-from typing import Annotated, Iterable
+import uuid
+from typing import Annotated
+from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from faster_whisper.transcribe import Segment, Word
 
 
@@ -27,6 +29,11 @@ class DialogueSegment(SpeakerSegment):
 
 
 class ConversationResponse(BaseModel):
+    id: Annotated[uuid.UUID, Field(...)]
+    filename: Annotated[str, Field(...)]
     language: Annotated[str, Field(...)]
     duration: Annotated[float, Field(...)]
+    created_at: Annotated[datetime, Field(...)]
     segments: Annotated[list[DialogueSegment], Field(...)]
+
+    model_config = ConfigDict(from_attributes=True)
