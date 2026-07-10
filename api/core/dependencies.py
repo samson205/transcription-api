@@ -19,7 +19,7 @@ _DIARIZATION_ENGINE = None
 def get_shared_whisper_engine() -> WhisperEngine:
     global _WHISPER_ENGINE
     if _WHISPER_ENGINE is None:
-        _WHISPER_ENGINE = WhisperEngine()
+        _WHISPER_ENGINE = WhisperEngine(word_timestamps=True)
         _WHISPER_ENGINE._load_model()
     return _WHISPER_ENGINE
 

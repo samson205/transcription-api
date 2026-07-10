@@ -4,8 +4,9 @@ from api.core.config import settings
 
 
 class WhisperEngine:
-    def __init__(self) -> None:
+    def __init__(self, word_timestamps: bool = True) -> None:
         self._model = None
+        self._word_timestamps = word_timestamps
 
     def _load_model(self):
         if self._model is None:
@@ -27,4 +28,5 @@ class WhisperEngine:
             beam_size=7,
             vad_filter=True,
             condition_on_previous_text=True,
+            word_timestamps=self._word_timestamps,
         )
