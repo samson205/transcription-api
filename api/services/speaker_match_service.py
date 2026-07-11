@@ -56,9 +56,9 @@ class SpeakerMatchService:
                 else:
                     if dist_1 < dist_2:
                         speaker_mapping[sp_1] = "Оператор [Неизвестен / Неуверенно]"
-                        speaker_mapping[sp_2] = "Клиент"
+                        speaker_mapping[sp_2] = "Клиент [Неуверенно]"
                     else:
-                        speaker_mapping[sp_1] = "Клиент"
+                        speaker_mapping[sp_1] = "Клиент [Неуверенно]"
                         speaker_mapping[sp_2] = "Оператор [Неизвестен / Неуверенно]"
 
         else:
