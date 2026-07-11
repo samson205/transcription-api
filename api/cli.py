@@ -7,9 +7,10 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.panel import Panel
 
-from api.core.dependencies import get_conversation_orchestrator
+from api.core.dependencies import get_conversation_orchestrator, get_operator_voice_orchestrator, get_operator_service
 from api.core.warnings import configure_warnings
 from api.core.config import settings
+from api.schemas.operator import OperatorCreate
 
 console = Console()
 configure_warnings()
@@ -96,6 +97,33 @@ async def process_directory(folder_path: Path, output_dir: Path | None):
             progress.advance(task)
 
 
+async def process_operator(file_path: Path, name: str):
+    if file_path.suffix not in settings.EXTENSIONS:
+        return
+    orchestrator = get_operator_voice_orchestrator()
+    service = get_operator_service()
+
+    try:
+        with console.status(
+            f"[cyan]Обработка[/cyan] {file_path.name}..."
+        ):
+            operator = await service.register(OperatorCreate(name=name))
+            await orchestrator.process_and_register_voice(
+                operator.id, str(file_path),
+            )
+
+        console.print(
+            f"✅ [green]Успешно:[/green] {file_path.name} "
+            f"[dim](ID оператора: {operator.id})[/dim]"
+        )
+
+    except Exception as e:
+        console.print(
+            f"❌ [red]Ошибка:[/red] {file_path.name}\n"
+            f"[dim]{e}[/dim]\n"
+        )
+
+
 async def main():
     parser = argparse.ArgumentParser(
         description="CLI утилита для пакетной обработки аудиозаписей"
@@ -106,6 +134,12 @@ async def main():
     group.add_argument("-d", "--directory", type=Path, help="Каталог с файлами для обработки")
 
     parser.add_argument(
+        "--operator-name",
+        type=str,
+        default=None,
+        help="Имя оператора (используется ТОЛЬКО вместе с флагом -f / --file)"
+    )
+    parser.add_argument(
         "-o",
         "--output",
         type=Path,
@@ -114,11 +148,18 @@ async def main():
     )
 
     args = parser.parse_args()
-    
-    if args.directory:
-        await process_directory(args.directory, args.output)
+
+    if args.directory and args.operator_name:
+        parser.error("Флаг --operator-name нельзя использовать при обработке директории (-d)")
+
+    if args.file and args.operator_name:
+        if args.output:
+            console.print("[yellow]Предупреждение:[/yellow] Флаг -o/--output игнорируется при создании оператора.")
+        await process_operator(args.file, args.operator_name)
     elif args.file:
         await process_single_file(args.file, args.output)
+    elif args.directory:
+        await process_directory(args.directory, args.output)
     else:
         parser.print_help()
 
