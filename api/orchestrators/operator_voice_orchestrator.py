@@ -1,6 +1,5 @@
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
-from api.services.temp_service import TempService
 
 
 class OperatorVoiceOrchestrator:
@@ -14,8 +13,5 @@ class OperatorVoiceOrchestrator:
         self, operator_id: int, file_path: str
     ) -> None:
         """Обрабатывает голос и добавляет эмбеддинг в БД"""
-        try:
-            embedding = self._embedding_service.extract_embedding(file_path)
-            await self._operator_service.update_embedding(operator_id, embedding)
-        finally:
-            TempService.delete_temp_file(file_path)
+        embedding = self._embedding_service.extract_embedding(file_path)
+        await self._operator_service.update_embedding(operator_id, embedding)

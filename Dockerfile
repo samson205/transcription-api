@@ -10,18 +10,8 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     ffmpeg \
     git \
-    curl \
-    ca-certificates \
     gnupg \
     && rm -rf /var/lib/apt/lists/*
-
-RUN curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb \
-    -o /tmp/cuda-keyring.deb \
-    && dpkg -i /tmp/cuda-keyring.deb \
-    && rm /tmp/cuda-keyring.deb
-
-RUN apt-get update && apt-get install -y \
-    libcublas12
 
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"

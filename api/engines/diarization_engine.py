@@ -7,6 +7,9 @@ from huggingface_hub import snapshot_download
 
 from api.core.config import settings
 
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
 
 class DiarizationEngine:
     def __init__(self) -> None:
