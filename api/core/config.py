@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     COMPUTE_TYPE: str = "int8_float16"
     LOCAL_FILES_ONLY: bool = False
     WORD_TIMESTAMPS: bool = True
+    
+    EXTENSIONS: set[str] = {".mp3", ".wav", ".ogg"}
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
