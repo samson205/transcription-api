@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     WORD_TIMESTAMPS: bool = True
     
     EXTENSIONS: set[str] = {".mp3", ".wav", ".ogg"}
+    MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
