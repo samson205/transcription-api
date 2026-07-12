@@ -1,13 +1,9 @@
 from fastapi import FastAPI
 
-from api.routers.conversations_router import router as conversations_router
-from api.routers.tasks_router import router as tasks_router
-from api.routers.operators_router import router as operators_router
+from api.routers.v1 import router as v1_router
 
 app = FastAPI()
-app.include_router(conversations_router)
-app.include_router(tasks_router)
-app.include_router(operators_router)
+app.include_router(v1_router)
 
 
 @app.get("/")

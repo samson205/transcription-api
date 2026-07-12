@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from api.schemas.task import TaskResponse
 from api.services.task_service import TaskService
 
-router = APIRouter(prefix="/tasks", tags=["tasks"])
+router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
 @router.get("/{task_id}", response_model=TaskResponse)

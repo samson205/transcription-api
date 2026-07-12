@@ -6,7 +6,7 @@ from api.services.task_service import TaskService
 from api.core.dependencies import get_operator_service
 from api.schemas.operator import OperatorCreate, OperatorRead
 
-router = APIRouter(prefix="/operators", tags=["operators"])
+router = APIRouter(prefix="/operators", tags=["Operators"])
 
 
 @router.post("/")
