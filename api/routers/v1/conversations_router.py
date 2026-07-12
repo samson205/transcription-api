@@ -6,7 +6,7 @@ from api.core.dependencies import get_conversation_service
 from api.schemas.task import BaseTaskResponse
 from api.schemas.transcription import ConversationResponse
 from api.services.task_service import TaskService
-from api.services.temp_service import TempService
+from api.services.temp_service import TempService, UnsupportedFileType, FileTooLarge
 from api.services.conversation_service import ConversationService
 
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
@@ -16,7 +16,11 @@ router = APIRouter(prefix="/conversations", tags=["Conversations"])
 async def transcribe(
     file: UploadFile = File(...),
 ):
-    tmp_path = TempService.get_temp_file(file)
+    try:
+        tmp_path = await TempService.get_temp_file(file)
+    except (UnsupportedFileType, FileTooLarge) as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
     task_id = TaskService.create_transcribe_task(str(tmp_path), str(file.filename))
     return BaseTaskResponse(task_id=task_id)
 
