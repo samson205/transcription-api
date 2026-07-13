@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from api.services.transcription_service import TranscriptionService
@@ -7,6 +8,8 @@ from api.services.speaker_match_service import SpeakerMatchService
 from api.services.conversation_service import ConversationService
 from api.processors.segment_aggregator import SegmentAggregator
 from api.schemas.transcription import ConversationResponse
+
+logger = logging.getLogger(__name__)
 
 
 class ConversationOrchestrator:
@@ -30,11 +33,18 @@ class ConversationOrchestrator:
         self, task_id: uuid.UUID, original_filename: str, path: str
     ) -> ConversationResponse:
         """Обрабатывает аудиофайл и записывает транскрипцию разговора в БД"""
+        logger.info("task_id=%s Pipeline started file=%s", task_id, original_filename)
+
         transcription = self._transcription_service.transcribe_file(str(path))
+
         clean_segments = self._segment_aggregator.merge_by_sentences(
             transcription.segments
         )
+        logger.info("task_id=%s Aggregated into %d sentences", task_id, len(clean_segments))
+
         diarization, embeddings = self._diarization_service.diarize(str(path))
+        logger.info("task_id=%s Diarization found %d speakers", task_id, len(embeddings))
+
         conversation_raw = self._alignment_service.align(
             clean_segments, diarization
         )
@@ -48,6 +58,7 @@ class ConversationOrchestrator:
             transcription.duration,
             conversation,
         )
+        logger.info("task_id=%s Pipeline finished, conversation saved", task_id)
 
         return ConversationResponse.model_validate(result)
     

@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
@@ -9,6 +10,8 @@ from api.services.task_service import TaskService
 from api.services.temp_service import TempService, UnsupportedFileType, FileTooLarge
 from api.services.conversation_service import ConversationService
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
 
 
@@ -16,12 +19,14 @@ router = APIRouter(prefix="/conversations", tags=["Conversations"])
 async def transcribe(
     file: UploadFile = File(...),
 ):
+    logger.info("Upload recieved filename=%s content_type=%s", file.filename, file.content_type)
     try:
         tmp_path = await TempService.get_temp_file(file)
     except (UnsupportedFileType, FileTooLarge) as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     task_id = TaskService.create_transcribe_task(str(tmp_path), str(file.filename))
+    logger.info("task_id=%s Queued for transcription file=%s", task_id, file.filename)
     return BaseTaskResponse(task_id=task_id)
 
 
@@ -33,4 +38,5 @@ async def get_conversation(
     try:
         return await service.get_by_id(conversation_id)
     except ValueError as e:
+        logger.warning("conversation_id=%s Not found", conversation_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

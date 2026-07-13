@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 
 from api.services.operator_service import OperatorService
@@ -5,6 +7,8 @@ from api.services.temp_service import TempService, UnsupportedFileType, FileTooL
 from api.services.task_service import TaskService
 from api.core.dependencies import get_operator_service
 from api.schemas.operator import OperatorCreate, OperatorRead
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/operators", tags=["Operators"])
 
@@ -15,6 +19,7 @@ async def create_operator(
     file: UploadFile = File(...),
     service: OperatorService = Depends(get_operator_service),
 ):
+    logger.info("Operator registration requested name=%s filename=%s content_type=%s", data.name, file.filename, file.content_type)
     try:
         tmp_path = await TempService.get_temp_file(file)
     except (UnsupportedFileType, FileTooLarge) as e:
@@ -24,6 +29,7 @@ async def create_operator(
     task_id = TaskService.create_extract_operator_embedding_task(
         operator.id, str(tmp_path)
     )
+    logger.info("operator_id=%s task_id=%s Queued for voice embedding extraction", operator.id, task_id)
     return {
         "operator_id": operator.id,
         "task_id": task_id,
@@ -37,4 +43,5 @@ async def get_operator_by_id(
     try:
         return await service.get_by_id(operator_id)
     except ValueError as e:
+        logger.warning("operator_id=%s Not found", operator_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
