@@ -11,4 +11,3 @@ def configure_warnings():
         "ignore",
         message="std\\(\\): degrees of freedom is <= 0",
     )
-    

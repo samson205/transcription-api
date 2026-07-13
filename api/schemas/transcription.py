@@ -5,6 +5,8 @@ from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 from faster_whisper.transcribe import Segment, Word
 
+from api.models.enums import ProcessingStatus
+
 
 class SegmentSchema(BaseModel):
     start: Annotated[float, Field(...)]
@@ -28,12 +30,17 @@ class DialogueSegment(SpeakerSegment):
     text: Annotated[str, Field(...)]
 
 
-class ConversationResponse(BaseModel):
-    id: Annotated[uuid.UUID, Field(...)]
+class BaseConversationResponse(BaseModel):
+    id: Annotated[int, Field(...)]
     filename: Annotated[str, Field(...)]
-    language: Annotated[str, Field(...)]
-    duration: Annotated[float, Field(...)]
-    created_at: Annotated[datetime, Field(...)]
-    segments: Annotated[list[DialogueSegment], Field(...)]
+    status: Annotated[ProcessingStatus, Field(...)]
+    error_message: Annotated[str | None, Field(None)]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ConversationResponse(BaseConversationResponse):
+    language: Annotated[str | None, Field(None)]
+    duration: Annotated[float | None, Field(None)]
+    created_at: Annotated[datetime, Field(...)]
+    segments: Annotated[list[DialogueSegment] | None, Field(None)]

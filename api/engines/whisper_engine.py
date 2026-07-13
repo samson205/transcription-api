@@ -15,7 +15,12 @@ class WhisperEngine:
 
     def _load_model(self):
         if self._model is None:
-            logger.info("Loading Whisper model=%s, device=%s, compute_type=%s", settings.MODEL_NAME, settings.DEVICE, settings.COMPUTE_TYPE)
+            logger.info(
+                "Loading Whisper model=%s, device=%s, compute_type=%s",
+                settings.MODEL_NAME,
+                settings.DEVICE,
+                settings.COMPUTE_TYPE,
+            )
             start = time.monotonic()
             models_dir = settings.MODELS_DIR / "whisper"
             models_dir.mkdir(exist_ok=True, parents=True)

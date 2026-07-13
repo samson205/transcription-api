@@ -7,9 +7,8 @@ def setup_logging(level: str = "INFO") -> None:
         level=level,
         format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
         stream=sys.stdout,
-        force=True
+        force=True,
     )
 
     for noisy in ("pyannote", "faster_whisper", "httpx", "urllib3"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
-        

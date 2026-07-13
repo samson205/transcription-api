@@ -1,5 +1,6 @@
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
+from api.models.enums import ProcessingStatus
 
 
 class OperatorVoiceOrchestrator:
@@ -13,5 +14,14 @@ class OperatorVoiceOrchestrator:
         self, operator_id: int, file_path: str
     ) -> None:
         """Обрабатывает голос и добавляет эмбеддинг в БД"""
-        embedding = self._embedding_service.extract_embedding(file_path)
-        await self._operator_service.update_embedding(operator_id, embedding)
+        try:
+            await self._operator_service.update_status(
+                operator_id, ProcessingStatus.PROCESSING, None
+            )
+            embedding = self._embedding_service.extract_embedding(file_path)
+            await self._operator_service.update_embedding(operator_id, embedding)
+        except Exception as e:
+            await self._operator_service.update_status(
+                operator_id, ProcessingStatus.FAILURE, str(e)
+            )
+            raise

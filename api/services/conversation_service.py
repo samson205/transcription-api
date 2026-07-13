@@ -1,7 +1,8 @@
-import uuid
+from typing import Any
 
 from api.repositories.conversation_repository import ConversationRepository
 from api.models.conversation_model import Conversation
+from api.models.enums import ProcessingStatus
 from api.schemas.transcription import DialogueSegment
 
 
@@ -11,18 +12,34 @@ class ConversationService:
 
     async def create(
         self,
-        task_id: uuid.UUID,
         filename: str,
+    ) -> Conversation:
+        return await self._repository.create(
+            filename,
+        )
+
+    async def get_by_id(self, conversation_id: int) -> Conversation:
+        result = await self._repository.get_by_id(conversation_id)
+        if not result:
+            raise ValueError("Conversation doesn't exist")
+
+        return result
+
+    async def update_status(
+        self, conversation_id: int, status: ProcessingStatus, error_message: str | None
+    ):
+        await self._repository.update_status(conversation_id, status, error_message)
+
+    async def save_final_result(
+        self,
+        conversation_id: int,
         language: str,
         duration: float,
         segments: list[DialogueSegment],
     ) -> Conversation:
-        return await self._repository.create(
-            task_id, filename, language, duration, [s.model_dump() for s in segments]
+        return await self._repository.save_results(
+            conversation_id,
+            language,
+            duration,
+            [s.model_dump() for s in segments],
         )
-
-    async def get_by_id(self, conversation_id: uuid.UUID) -> Conversation:
-        result = await self._repository.get_by_id(conversation_id)
-        if not result:
-            raise ValueError("Conversation not ready or doesn't exists")
-        return result

@@ -21,7 +21,9 @@ class DiarizationEngine:
 
     def _load_pipeline(self):
         if self._pipeline is None:
-            logger.info("Loading pyannote diarizationp pipeline device=%s", settings.DEVICE)
+            logger.info(
+                "Loading pyannote diarizationp pipeline device=%s", settings.DEVICE
+            )
             start = time.monotonic()
             pyannote_cache_dir = Path(settings.MODELS_DIR) / "pyannote"
             pyannote_cache_dir.mkdir(parents=True, exist_ok=True)
@@ -39,7 +41,9 @@ class DiarizationEngine:
                 config_path, use_auth_token=settings.HF_TOKEN
             )
             self._pipeline.to(torch.device(settings.DEVICE))
-            logger.info("Diarization pipeline loaded in %.2fs", time.monotonic() - start)
+            logger.info(
+                "Diarization pipeline loaded in %.2fs", time.monotonic() - start
+            )
         return self._pipeline
 
     def diarize_audio(self, path: str):

@@ -23,7 +23,14 @@ class TranscriptionService:
                 data_to_return.append(s)
         elapsed = time.monotonic() - start
 
-        logger.info("Transcription done file=%s, lang=%s, duration=%.2fs, segments=%d, took=%.2fs", path, info.language, info.duration, len(data_to_return), elapsed)
+        logger.info(
+            "Transcription done file=%s, lang=%s, duration=%.2fs, segments=%d, took=%.2fs",
+            path,
+            info.language,
+            info.duration,
+            len(data_to_return),
+            elapsed,
+        )
         return RawTranscriptionSchema(
             language=info.language,
             duration=round(info.duration, 1),

@@ -26,7 +26,12 @@ class SpeakerMatchService:
                 embedding_vector
             )
             scores[speaker_id] = {"operator": operator, "distance": distance}
-            logger.info("speaker=%s candidate_operator=%s distance=%.3f", speaker_id, operator.name if operator else None, distance)
+            logger.info(
+                "speaker=%s candidate_operator=%s distance=%.3f",
+                speaker_id,
+                operator.name if operator else None,
+                distance,
+            )
 
         if len(scores) == 2:
             sp_1, sp_2 = list(scores.keys())
@@ -75,7 +80,9 @@ class SpeakerMatchService:
 
         for speaker_id, role in speaker_mapping.items():
             if "Неуверенно" in role or "Неизвестно" in role or "Неизвестен" in role:
-                logger.warning("speaker=%s low-confidence match role=%r", speaker_id, role)
+                logger.warning(
+                    "speaker=%s low-confidence match role=%r", speaker_id, role
+                )
 
         matched_segments = []
         for segment in segments:

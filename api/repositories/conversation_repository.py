@@ -1,9 +1,10 @@
-import uuid
 from typing import Callable, AsyncContextManager, Any
 
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models.conversation_model import Conversation
+from api.models.enums import ProcessingStatus
 
 
 class ConversationRepository:
@@ -14,25 +15,57 @@ class ConversationRepository:
 
     async def create(
         self,
-        task_id: uuid.UUID,
         filename: str,
+    ) -> Conversation:
+        async with self._session_factory() as session:
+            conversation = Conversation(
+                filename=filename,
+                status=ProcessingStatus.PENDING,
+            )
+            session.add(conversation)
+            await session.commit()
+            await session.refresh(conversation)
+            return conversation
+
+    async def get_by_id(self, conversation_id: int) -> Conversation | None:
+        async with self._session_factory() as session:
+            return await session.get(Conversation, conversation_id)
+
+    async def update_status(
+        self, conversation_id: int, status: ProcessingStatus, error_message: str | None
+    ) -> None:
+        async with self._session_factory() as session:
+            conversation = await session.get(Conversation, conversation_id)
+            if conversation is None:
+                raise ValueError("Conversation not found")
+
+            conversation.status = status
+            conversation.error_message = error_message
+            await session.commit()
+
+    async def save_results(
+        self,
+        conversation_id: int,
         language: str,
         duration: float,
         segments: list[dict[str, Any]],
-    ) -> Conversation:
+    ):
         async with self._session_factory() as session:
-            transcription = Conversation(
-                id=task_id,
-                filename=filename,
-                language=language,
-                duration=duration,
-                segments=segments,
+            stmt = (
+                update(Conversation)
+                .where(Conversation.id == conversation_id)
+                .values(
+                    language=language,
+                    duration=duration,
+                    segments=segments,
+                    status=ProcessingStatus.SUCCESS,
+                )
+                .returning(Conversation)
             )
-            session.add(transcription)
-            await session.commit()
-            await session.refresh(transcription)
-            return transcription
+            result = await session.execute(stmt)
+            conversation = result.scalar_one_or_none()
+            if conversation is None:
+                raise ValueError("Conversation not found")
 
-    async def get_by_id(self, conversation_id: uuid.UUID) -> Conversation | None:
-        async with self._session_factory() as session:
-            return await session.get(Conversation, conversation_id)
+            await session.commit()
+            return conversation
