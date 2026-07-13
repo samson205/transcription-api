@@ -1,3 +1,5 @@
+import logging
+import time
 from pathlib import Path
 
 import torch
@@ -10,6 +12,8 @@ from api.core.config import settings
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
+logger = logging.getLogger(__name__)
+
 
 class DiarizationEngine:
     def __init__(self) -> None:
@@ -17,6 +21,8 @@ class DiarizationEngine:
 
     def _load_pipeline(self):
         if self._pipeline is None:
+            logger.info("Loading pyannote diarizationp pipeline device=%s", settings.DEVICE)
+            start = time.monotonic()
             pyannote_cache_dir = Path(settings.MODELS_DIR) / "pyannote"
             pyannote_cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -33,12 +39,15 @@ class DiarizationEngine:
                 config_path, use_auth_token=settings.HF_TOKEN
             )
             self._pipeline.to(torch.device(settings.DEVICE))
+            logger.info("Diarization pipeline loaded in %.2fs", time.monotonic() - start)
         return self._pipeline
 
     def diarize_audio(self, path: str):
         pipeline = self._load_pipeline()
         waveform, sample_rate = torchaudio.load(path)
-        return pipeline(
+        logger.info("Diarizating file=%s", path)
+        start = time.monotonic()
+        result = pipeline(
             {
                 "waveform": waveform,
                 "sample_rate": sample_rate,
@@ -46,3 +55,5 @@ class DiarizationEngine:
             max_speakers=2,
             return_embeddings=True,
         )
+        logger.info("Diarized file=%s in %.2fs", path, time.monotonic() - start)
+        return result

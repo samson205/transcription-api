@@ -1,5 +1,9 @@
+import logging
+
 from api.services.operator_service import OperatorService
 from api.schemas.transcription import DialogueSegment
+
+logger = logging.getLogger(__name__)
 
 
 class SpeakerMatchService:
@@ -22,6 +26,7 @@ class SpeakerMatchService:
                 embedding_vector
             )
             scores[speaker_id] = {"operator": operator, "distance": distance}
+            logger.info("speaker=%s candidate_operator=%s distance=%.3f", speaker_id, operator.name if operator else None, distance)
 
         if len(scores) == 2:
             sp_1, sp_2 = list(scores.keys())
@@ -67,6 +72,10 @@ class SpeakerMatchService:
                     speaker_mapping[speaker_id] = f"Оператор ({data["operator"].name})"
                 else:
                     speaker_mapping[speaker_id] = "Клиент / Неизвестно"
+
+        for speaker_id, role in speaker_mapping.items():
+            if "Неуверенно" in role or "Неизвестно" in role or "Неизвестен" in role:
+                logger.warning("speaker=%s low-confidence match role=%r", speaker_id, role)
 
         matched_segments = []
         for segment in segments:
