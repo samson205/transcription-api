@@ -34,7 +34,9 @@ class ConversationOrchestrator:
     ) -> ConversationResponse:
         """Обрабатывает аудиофайл и записывает транскрипцию разговора в БД"""
         logger.info(
-            "conversation_id=%s Pipeline started file=%s", conversation_id, original_filename
+            "conversation_id=%s Pipeline started file=%s",
+            conversation_id,
+            original_filename,
         )
 
         try:
@@ -73,7 +75,8 @@ class ConversationOrchestrator:
                 conversation,
             )
             logger.info(
-                "conversation_id=%s Pipeline finished, conversation saved", conversation_id
+                "conversation_id=%s Pipeline finished, conversation saved",
+                conversation_id,
             )
         except Exception as e:
             result = await self._conversation_service.update_status(

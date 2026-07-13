@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 
 from api.core.dependencies import get_conversation_service
-from api.schemas.transcription import ConversationResponse
+from api.schemas.transcription import ConversationResponse, BaseConversationResponse
 from api.services.task_service import TaskService
 from api.services.temp_service import TempService, UnsupportedFileType, FileTooLarge
 from api.services.conversation_service import ConversationService
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
 
 
-@router.post("/", response_model=ConversationResponse)
+@router.post("/", response_model=BaseConversationResponse)
 async def transcribe(
     file: UploadFile = File(...),
     service: ConversationService = Depends(get_conversation_service),
@@ -30,7 +30,12 @@ async def transcribe(
     task_id = TaskService.create_transcribe_task(
         conversation.id, str(tmp_path), str(file.filename)
     )
-    logger.info("task_id=%s Queued for transcription file=%s", task_id, file.filename)
+    logger.info(
+        "conversation_id=%s task_id=%s Queued for transcription file=%s",
+        task_id,
+        conversation.id,
+        file.filename,
+    )
     return conversation
 
 

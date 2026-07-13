@@ -66,6 +66,6 @@ class ConversationRepository:
             conversation = result.scalar_one_or_none()
             if conversation is None:
                 raise ValueError("Conversation not found")
-            
+
             await session.commit()
             return conversation

@@ -30,14 +30,17 @@ class DialogueSegment(SpeakerSegment):
     text: Annotated[str, Field(...)]
 
 
-class ConversationResponse(BaseModel):
+class BaseConversationResponse(BaseModel):
     id: Annotated[int, Field(...)]
     filename: Annotated[str, Field(...)]
     status: Annotated[ProcessingStatus, Field(...)]
     error_message: Annotated[str | None, Field(None)]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ConversationResponse(BaseConversationResponse):
     language: Annotated[str | None, Field(None)]
     duration: Annotated[float | None, Field(None)]
     created_at: Annotated[datetime, Field(...)]
     segments: Annotated[list[DialogueSegment] | None, Field(None)]
-
-    model_config = ConfigDict(from_attributes=True)
