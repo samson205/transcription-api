@@ -29,7 +29,7 @@ class TestGetConversation:
     @pytest.mark.parametrize(
         "id,status",
         [
-            (1, ProcessingStatus.SUCCESS), (2, ProcessingStatus.PENDING), (3, ProcessingStatus.PROCESSING)
+            (1, ProcessingStatus.SUCCESS), (2, ProcessingStatus.PENDING), (3, ProcessingStatus.PROCESSING), (4, ProcessingStatus.FAILURE)
         ]
     )
     async def test_returns_conversation(self, client, mock_conversation_service, id, status):

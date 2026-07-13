@@ -4,9 +4,9 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 
 from api.services.operator_service import OperatorService
 from api.services.temp_service import TempService, UnsupportedFileType, FileTooLarge
-from api.services.task_service import TaskService
 from api.core.dependencies import get_operator_service
 from api.schemas.operator import OperatorCreate, OperatorRead
+from api.tasks.operator_tasks import extract_operator_embedding_task
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +31,11 @@ async def create_operator(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     operator = await service.register(data)
-    task_id = TaskService.create_extract_operator_embedding_task(
-        operator.id, str(tmp_path)
-    )
+    task = extract_operator_embedding_task.apply_async(args=[operator.id, str(tmp_path)])
     logger.info(
         "operator_id=%s task_id=%s Queued for voice embedding extraction",
         operator.id,
-        task_id,
+        task.id,
     )
     return operator
 

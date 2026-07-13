@@ -4,9 +4,9 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 
 from api.core.dependencies import get_conversation_service
 from api.schemas.transcription import ConversationResponse, BaseConversationResponse
-from api.services.task_service import TaskService
 from api.services.temp_service import TempService, UnsupportedFileType, FileTooLarge
 from api.services.conversation_service import ConversationService
+from api.tasks.transcription_tasks import transcribe_task
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +27,12 @@ async def transcribe(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     conversation = await service.create(str(file.filename))
-    task_id = TaskService.create_transcribe_task(
-        conversation.id, str(tmp_path), str(file.filename)
+    task = transcribe_task.apply_async(
+        args=[conversation.id, str(tmp_path), str(file.filename)]
     )
     logger.info(
         "conversation_id=%s task_id=%s Queued for transcription file=%s",
-        task_id,
+        task.id,
         conversation.id,
         file.filename,
     )

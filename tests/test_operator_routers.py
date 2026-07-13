@@ -29,7 +29,7 @@ class TestGetOperator:
     @pytest.mark.parametrize(
         "id,status",
         [
-            (1, ProcessingStatus.SUCCESS), (2, ProcessingStatus.PENDING), (3, ProcessingStatus.PROCESSING)
+            (1, ProcessingStatus.SUCCESS), (2, ProcessingStatus.PENDING), (3, ProcessingStatus.PROCESSING), (4, ProcessingStatus.FAILURE)
         ]
     )
     async def test_returns_operator(self, client, mock_operator_service, id, status):
