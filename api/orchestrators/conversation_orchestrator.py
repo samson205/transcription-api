@@ -1,5 +1,4 @@
 import logging
-import uuid
 
 from api.services.transcription_service import TranscriptionService
 from api.services.diarization_service import DiarizationService
@@ -8,6 +7,7 @@ from api.services.speaker_match_service import SpeakerMatchService
 from api.services.conversation_service import ConversationService
 from api.processors.segment_aggregator import SegmentAggregator
 from api.schemas.transcription import ConversationResponse
+from api.models.enums import ProcessingStatus
 
 logger = logging.getLogger(__name__)
 
@@ -30,35 +30,55 @@ class ConversationOrchestrator:
         self._conversation_service = conversation_service
 
     async def process_and_get_conversation(
-        self, task_id: uuid.UUID, original_filename: str, path: str
+        self, conversation_id: int, original_filename: str, path: str
     ) -> ConversationResponse:
         """Обрабатывает аудиофайл и записывает транскрипцию разговора в БД"""
-        logger.info("task_id=%s Pipeline started file=%s", task_id, original_filename)
-
-        transcription = self._transcription_service.transcribe_file(str(path))
-
-        clean_segments = self._segment_aggregator.merge_by_sentences(
-            transcription.segments
+        logger.info(
+            "conversation_id=%s Pipeline started file=%s", conversation_id, original_filename
         )
-        logger.info("task_id=%s Aggregated into %d sentences", task_id, len(clean_segments))
 
-        diarization, embeddings = self._diarization_service.diarize(str(path))
-        logger.info("task_id=%s Diarization found %d speakers", task_id, len(embeddings))
+        try:
+            await self._conversation_service.update_status(
+                conversation_id, ProcessingStatus.PROCESSING, None
+            )
 
-        conversation_raw = self._alignment_service.align(
-            clean_segments, diarization
-        )
-        conversation = await self._speaker_match_service.match_operators(
-            conversation_raw, embeddings
-        )
-        result = await self._conversation_service.create(
-            task_id,
-            original_filename,
-            transcription.language,
-            transcription.duration,
-            conversation,
-        )
-        logger.info("task_id=%s Pipeline finished, conversation saved", task_id)
+            transcription = self._transcription_service.transcribe_file(str(path))
+
+            clean_segments = self._segment_aggregator.merge_by_sentences(
+                transcription.segments
+            )
+            logger.info(
+                "conversation_id=%s Aggregated into %d sentences",
+                conversation_id,
+                len(clean_segments),
+            )
+
+            diarization, embeddings = self._diarization_service.diarize(str(path))
+            logger.info(
+                "conversation_id=%s Diarization found %d speakers",
+                conversation_id,
+                len(embeddings),
+            )
+
+            conversation_raw = self._alignment_service.align(
+                clean_segments, diarization
+            )
+            conversation = await self._speaker_match_service.match_operators(
+                conversation_raw, embeddings
+            )
+            result = await self._conversation_service.save_final_result(
+                conversation_id,
+                transcription.language,
+                transcription.duration,
+                conversation,
+            )
+            logger.info(
+                "conversation_id=%s Pipeline finished, conversation saved", conversation_id
+            )
+        except Exception as e:
+            result = await self._conversation_service.update_status(
+                conversation_id, ProcessingStatus.FAILURE, str(e)
+            )
+            raise
 
         return ConversationResponse.model_validate(result)
-    

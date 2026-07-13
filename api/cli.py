@@ -1,13 +1,17 @@
 import argparse
 import asyncio
-import uuid
 from pathlib import Path
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.panel import Panel
 
-from api.core.dependencies import get_conversation_orchestrator, get_operator_voice_orchestrator, get_operator_service
+from api.core.dependencies import (
+    get_conversation_orchestrator,
+    get_operator_voice_orchestrator,
+    get_operator_service,
+    get_conversation_service,
+)
 from api.core.warnings import configure_warnings
 from api.core.config import settings
 from api.schemas.operator import OperatorCreate
@@ -16,44 +20,36 @@ console = Console()
 configure_warnings()
 
 
-async def process_single_file(
-    file_path: Path, output_dir: Path | None
-) -> None:
+async def process_single_file(file_path: Path, output_dir: Path | None) -> None:
     if file_path.suffix not in settings.EXTENSIONS:
         return
     orchestrator = get_conversation_orchestrator()
-    generated_id = uuid.uuid4()
+    service = get_conversation_service()
 
     try:
-        with console.status(
-            f"[cyan]Обработка[/cyan] {file_path.name}..."
-        ):
+        with console.status(f"[cyan]Обработка[/cyan] {file_path.name}..."):
+            conversation = await service.create(str(file_path.name))
             result = await orchestrator.process_and_get_conversation(
-                generated_id, file_path.name, str(file_path)
+                conversation.id, file_path.name, str(file_path)
             )
 
         console.print(
             f"✅ [green]Успешно:[/green] {file_path.name} "
-            f"[dim](ID: {generated_id})[/dim]"
+            f"[dim](ID: {conversation.id})[/dim]"
         )
 
         if output_dir:
             output_dir.mkdir(parents=True, exist_ok=True)
-            output_file = output_dir / f"{file_path.stem}_{generated_id}.json"
+            output_file = output_dir / f"{file_path.stem}_{conversation.id}.json"
             output_file.write_text(
                 result.model_dump_json(indent=4),
                 encoding="utf-8",
             )
 
-            console.print(
-                f"JSON сохранён: [blue]{output_file}[/blue]\n"
-            )
+            console.print(f"JSON сохранён: [blue]{output_file}[/blue]\n")
 
     except Exception as e:
-        console.print(
-            f"❌ [red]Ошибка:[/red] {file_path.name}\n"
-            f"[dim]{e}[/dim]\n"
-        )
+        console.print(f"❌ [red]Ошибка:[/red] {file_path.name}\n" f"[dim]{e}[/dim]\n")
 
 
 async def process_directory(folder_path: Path, output_dir: Path | None):
@@ -104,12 +100,11 @@ async def process_operator(file_path: Path, name: str):
     service = get_operator_service()
 
     try:
-        with console.status(
-            f"[cyan]Обработка[/cyan] {file_path.name}..."
-        ):
+        with console.status(f"[cyan]Обработка[/cyan] {file_path.name}..."):
             operator = await service.register(OperatorCreate(name=name))
             await orchestrator.process_and_register_voice(
-                operator.id, str(file_path),
+                operator.id,
+                str(file_path),
             )
 
         console.print(
@@ -118,10 +113,7 @@ async def process_operator(file_path: Path, name: str):
         )
 
     except Exception as e:
-        console.print(
-            f"❌ [red]Ошибка:[/red] {file_path.name}\n"
-            f"[dim]{e}[/dim]\n"
-        )
+        console.print(f"❌ [red]Ошибка:[/red] {file_path.name}\n" f"[dim]{e}[/dim]\n")
 
 
 async def main():
@@ -130,14 +122,18 @@ async def main():
     )
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-f", "--file", type=Path, help="Файл для обработки (.mp3, .wav, .ogg)")
-    group.add_argument("-d", "--directory", type=Path, help="Каталог с файлами для обработки")
+    group.add_argument(
+        "-f", "--file", type=Path, help="Файл для обработки (.mp3, .wav, .ogg)"
+    )
+    group.add_argument(
+        "-d", "--directory", type=Path, help="Каталог с файлами для обработки"
+    )
 
     parser.add_argument(
         "--operator-name",
         type=str,
         default=None,
-        help="Имя оператора (используется ТОЛЬКО вместе с флагом -f / --file)"
+        help="Имя оператора (используется ТОЛЬКО вместе с флагом -f / --file)",
     )
     parser.add_argument(
         "-o",
@@ -150,11 +146,15 @@ async def main():
     args = parser.parse_args()
 
     if args.directory and args.operator_name:
-        parser.error("Флаг --operator-name нельзя использовать при обработке директории (-d)")
+        parser.error(
+            "Флаг --operator-name нельзя использовать при обработке директории (-d)"
+        )
 
     if args.file and args.operator_name:
         if args.output:
-            console.print("[yellow]Предупреждение:[/yellow] Флаг -o/--output игнорируется при создании оператора.")
+            console.print(
+                "[yellow]Предупреждение:[/yellow] Флаг -o/--output игнорируется при создании оператора."
+            )
         await process_operator(args.file, args.operator_name)
     elif args.file:
         await process_single_file(args.file, args.output)

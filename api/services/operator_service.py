@@ -1,5 +1,6 @@
 from api.repositories.operator_repository import OperatorRepository
 from api.models.operator_model import Operator
+from api.models.enums import ProcessingStatus
 from api.schemas.operator import OperatorCreate
 
 
@@ -24,6 +25,11 @@ class OperatorService:
         if not result:
             raise ValueError("Operator not found")
         return None
+
+    async def update_status(
+        self, operator_id: int, status: ProcessingStatus, error_message: str | None
+    ):
+        await self._repo.update_status(operator_id, status, error_message)
 
     async def find_matching_operator(
         self, embedding: list[float]

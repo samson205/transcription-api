@@ -13,13 +13,18 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/operators", tags=["Operators"])
 
 
-@router.post("/")
+@router.post("/", response_model=OperatorRead)
 async def create_operator(
     data: OperatorCreate = Depends(OperatorCreate.as_form),
     file: UploadFile = File(...),
     service: OperatorService = Depends(get_operator_service),
 ):
-    logger.info("Operator registration requested name=%s filename=%s content_type=%s", data.name, file.filename, file.content_type)
+    logger.info(
+        "Operator registration requested name=%s filename=%s content_type=%s",
+        data.name,
+        file.filename,
+        file.content_type,
+    )
     try:
         tmp_path = await TempService.get_temp_file(file)
     except (UnsupportedFileType, FileTooLarge) as e:
@@ -29,11 +34,12 @@ async def create_operator(
     task_id = TaskService.create_extract_operator_embedding_task(
         operator.id, str(tmp_path)
     )
-    logger.info("operator_id=%s task_id=%s Queued for voice embedding extraction", operator.id, task_id)
-    return {
-        "operator_id": operator.id,
-        "task_id": task_id,
-    }
+    logger.info(
+        "operator_id=%s task_id=%s Queued for voice embedding extraction",
+        operator.id,
+        task_id,
+    )
+    return operator
 
 
 @router.get("/{operator_id}", response_model=OperatorRead)
