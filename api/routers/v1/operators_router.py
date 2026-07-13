@@ -16,7 +16,7 @@ async def create_operator(
     service: OperatorService = Depends(get_operator_service),
 ):
     try:
-        tmp_path = TempService.get_temp_file(file)
+        tmp_path = await TempService.get_temp_file(file)
     except (UnsupportedFileType, FileTooLarge) as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
