@@ -3,7 +3,6 @@ from api.core.config import settings
 from api.engines.whisper_engine import WhisperEngine
 from api.engines.embedding_engine import EmbeddingEngine
 from api.services.transcription_service import TranscriptionService
-from api.services.alignment_service import AlignmentService
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
 from api.services.speaker_match_service import SpeakerMatchService
@@ -50,10 +49,6 @@ def get_operator_service() -> OperatorService:
     return OperatorService(get_operator_repository())
 
 
-def get_alignment_service() -> AlignmentService:
-    return AlignmentService()
-
-
 def get_speaker_match_service() -> SpeakerMatchService:
     return SpeakerMatchService(get_operator_service(), get_embedding_service())
 
@@ -77,7 +72,6 @@ def get_conversation_service() -> ConversationService:
 def get_conversation_orchestrator() -> ConversationOrchestrator:
     return ConversationOrchestrator(
         get_transcription_service(),
-        get_alignment_service(),
         get_speaker_match_service(),
         get_segment_aggregator(),
         get_conversation_service(),

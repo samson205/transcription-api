@@ -2,7 +2,6 @@ import logging
 import time
 
 from api.services.transcription_service import TranscriptionService
-from api.services.alignment_service import AlignmentService
 from api.services.speaker_match_service import SpeakerMatchService
 from api.services.conversation_service import ConversationService
 from api.processors.segment_aggregator import SegmentAggregator
@@ -16,13 +15,11 @@ class ConversationOrchestrator:
     def __init__(
         self,
         transcription_service: TranscriptionService,
-        alignment_service: AlignmentService,
         speaker_match_service: SpeakerMatchService,
         segment_aggregator: SegmentAggregator,
         conversation_service: ConversationService,
     ) -> None:
         self._transcription_service = transcription_service
-        self._alignment_service = alignment_service
         self._speaker_match_service = speaker_match_service
         self._segment_aggregator = segment_aggregator
         self._conversation_service = conversation_service

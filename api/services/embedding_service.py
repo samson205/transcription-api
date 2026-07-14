@@ -8,7 +8,7 @@ class EmbeddingService:
     def __init__(self, embedding_engine: EmbeddingEngine) -> None:
         self._embedding_engine = embedding_engine
 
-    def load_audio(self, path: str):
+    def load_audio(self, path: str) -> dict:
         waveform, sample_rate = torchaudio.load(path)
         if sample_rate != 16000:
             resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)
