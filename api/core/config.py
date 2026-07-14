@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = ""
     DB_URL: str = ""
 
-    MODEL_NAME: str = "medium"
+    MODEL_NAME: str = "large-v3"
     DEVICE: str = "cuda"
     COMPUTE_TYPE: str = "int8_float16"
     LOCAL_FILES_ONLY: bool = False

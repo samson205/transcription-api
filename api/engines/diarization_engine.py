@@ -4,6 +4,7 @@ from pathlib import Path
 
 import torch
 import torchaudio
+import torchaudio.functional as F
 from pyannote.audio import Pipeline
 from huggingface_hub import snapshot_download
 
@@ -41,6 +42,17 @@ class DiarizationEngine:
                 config_path, use_auth_token=settings.HF_TOKEN
             )
             self._pipeline.to(torch.device(settings.DEVICE))
+
+            HYPER_PARAMETERS = {
+                "clustering": {
+                    "method": "centroid",
+                    "min_cluster_size": 9,
+                    "threshold": 0.45,
+                }
+            }
+
+            self._pipeline.instantiate(HYPER_PARAMETERS)
+
             logger.info(
                 "Diarization pipeline loaded in %.2fs", time.monotonic() - start
             )
@@ -49,6 +61,13 @@ class DiarizationEngine:
     def diarize_audio(self, path: str):
         pipeline = self._load_pipeline()
         waveform, sample_rate = torchaudio.load(path)
+        if sample_rate != 16000:
+            waveform = F.resample(waveform, sample_rate, 16000)
+            sample_rate = 16000
+
+        if waveform.shape[0] > 1:
+            waveform = waveform.mean(dim=0, keepdim=True)
+
         logger.info("Diarizating file=%s", path)
         start = time.monotonic()
         result = pipeline(
@@ -56,6 +75,7 @@ class DiarizationEngine:
                 "waveform": waveform,
                 "sample_rate": sample_rate,
             },
+            min_speakers=2,
             max_speakers=2,
             return_embeddings=True,
         )

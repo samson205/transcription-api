@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from api.core.celery import celery
-from api.core.utils import run_async_coro
+from api.core.utils import run_async_coro, release_gpu_memory
 from api.core.dependencies import get_conversation_orchestrator
 
 logger = logging.getLogger(__name__)
@@ -33,5 +33,6 @@ def transcribe_task(conversation_id: int, path: str, original_filename: str):
     finally:
         if Path(path).exists():
             Path(path).unlink(missing_ok=True)
+        release_gpu_memory()
 
     return {"status": "success", "conversation_id": conversation_id}

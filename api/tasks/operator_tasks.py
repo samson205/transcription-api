@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from api.core.celery import celery
-from api.core.utils import run_async_coro
+from api.core.utils import run_async_coro, release_gpu_memory
 from api.core.dependencies import get_operator_voice_orchestrator
 
 logger = logging.getLogger(__name__)
@@ -29,5 +29,6 @@ def extract_operator_embedding_task(operator_id: int, file_path: str):
     finally:
         if Path(file_path).exists():
             Path(file_path).unlink(missing_ok=True)
+        release_gpu_memory()
 
     return {"status": "success", "operator_id": operator_id}
