@@ -1,9 +1,8 @@
 from api.core.database import database_session
 from api.core.config import settings
 from api.engines.whisper_engine import WhisperEngine
-from api.engines.diarization_engine import DiarizationEngine
+from api.engines.embedding_engine import EmbeddingEngine
 from api.services.transcription_service import TranscriptionService
-from api.services.diarization_service import DiarizationService
 from api.services.alignment_service import AlignmentService
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
@@ -16,7 +15,7 @@ from api.orchestrators.operator_voice_orchestrator import OperatorVoiceOrchestra
 from api.orchestrators.conversation_orchestrator import ConversationOrchestrator
 
 _WHISPER_ENGINE = None
-_DIARIZATION_ENGINE = None
+_EMBEDDING_ENGINE = None
 
 
 def get_shared_whisper_engine() -> WhisperEngine:
@@ -27,24 +26,20 @@ def get_shared_whisper_engine() -> WhisperEngine:
     return _WHISPER_ENGINE
 
 
-def get_shared_diarization_engine() -> DiarizationEngine:
-    global _DIARIZATION_ENGINE
-    if _DIARIZATION_ENGINE is None:
-        _DIARIZATION_ENGINE = DiarizationEngine()
-        _DIARIZATION_ENGINE._load_pipeline()
-    return _DIARIZATION_ENGINE
+def get_shared_embedding_engine() -> EmbeddingEngine:
+    global _EMBEDDING_ENGINE
+    if _EMBEDDING_ENGINE is None:
+        _EMBEDDING_ENGINE = EmbeddingEngine()
+        _EMBEDDING_ENGINE._load_inference()
+    return _EMBEDDING_ENGINE
 
 
 def get_transcription_service() -> TranscriptionService:
     return TranscriptionService(get_shared_whisper_engine())
 
 
-def get_diarization_service() -> DiarizationService:
-    return DiarizationService(get_shared_diarization_engine())
-
-
 def get_embedding_service() -> EmbeddingService:
-    return EmbeddingService(get_shared_diarization_engine())
+    return EmbeddingService(get_shared_embedding_engine())
 
 
 def get_operator_repository() -> OperatorRepository:
@@ -60,7 +55,7 @@ def get_alignment_service() -> AlignmentService:
 
 
 def get_speaker_match_service() -> SpeakerMatchService:
-    return SpeakerMatchService(get_operator_service())
+    return SpeakerMatchService(get_operator_service(), get_embedding_service())
 
 
 def get_segment_aggregator() -> SegmentAggregator:
@@ -82,7 +77,6 @@ def get_conversation_service() -> ConversationService:
 def get_conversation_orchestrator() -> ConversationOrchestrator:
     return ConversationOrchestrator(
         get_transcription_service(),
-        get_diarization_service(),
         get_alignment_service(),
         get_speaker_match_service(),
         get_segment_aggregator(),
