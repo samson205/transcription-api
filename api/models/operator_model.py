@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, String, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Integer, String, DateTime, Boolean, text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import ENUM
 from pgvector.sqlalchemy import Vector
 
@@ -26,6 +26,11 @@ class Operator(Base):
         server_default=ProcessingStatus.PENDING.value,
     )
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+    conversations: Mapped[list["Conversation"]] = relationship("Conversation", back_populates="operator")  # type: ignore

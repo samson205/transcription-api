@@ -30,6 +30,21 @@ class OperatorRepository:
             result = await session.scalars(select(Operator))
             return list(result)
 
+    async def soft_delete(self, operator_id: int) -> bool:
+        async with self._session_factory() as session:
+            stmt = (
+                update(Operator)
+                .where(Operator.id == operator_id)
+                .values(is_active=False)
+                .returning(Operator.id)
+            )
+            result = await session.execute(stmt)
+            await session.commit()
+
+            if result.scalar_one_or_none() is None:
+                return False
+            return True
+
     async def delete(self, operator_id: int) -> None:
         async with self._session_factory() as session:
             operator = await session.get(Operator, operator_id)
@@ -64,7 +79,6 @@ class OperatorRepository:
 
             if result.scalar_one_or_none() is None:
                 return False
-
             return True
 
     async def find_nearest(
@@ -76,7 +90,10 @@ class OperatorRepository:
                     Operator,
                     Operator.embedding.cosine_distance(embedding).label("distance"),
                 )
-                .where(Operator.status == ProcessingStatus.SUCCESS)
+                .where(
+                    Operator.status == ProcessingStatus.SUCCESS,
+                    Operator.is_active == True,
+                )
                 .order_by("distance")
                 .limit(1)
             )

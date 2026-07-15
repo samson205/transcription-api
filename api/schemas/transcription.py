@@ -40,6 +40,7 @@ class BaseConversationResponse(BaseModel):
 
 
 class ConversationResponse(BaseConversationResponse):
+    operator_id: Annotated[int | None, Field(None)]
     language: Annotated[str | None, Field(None)]
     duration: Annotated[float | None, Field(None)]
     created_at: Annotated[datetime, Field(...)]

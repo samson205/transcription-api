@@ -29,7 +29,14 @@ class OperatorService:
     async def update_status(
         self, operator_id: int, status: ProcessingStatus, error_message: str | None
     ):
+        """Обновляет статус обработки оператора"""
         await self._repo.update_status(operator_id, status, error_message)
+
+    async def soft_delete(self, operator_id: int) -> None:
+        """Делает поле is_active = False (мягкое удаление)"""
+        result = await self._repo.soft_delete(operator_id)
+        if not result:
+            raise ValueError("Operator not found")
 
     async def find_matching_operator(
         self, embedding: list[float]

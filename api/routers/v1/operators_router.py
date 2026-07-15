@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/operators", tags=["Operators"])
 
 
-@router.post("/", response_model=OperatorRead)
+@router.post("/", response_model=OperatorRead, status_code=status.HTTP_202_ACCEPTED)
 async def create_operator(
     data: OperatorCreate = Depends(OperatorCreate.as_form),
     file: UploadFile = File(...),
@@ -48,6 +48,17 @@ async def get_operator_by_id(
 ):
     try:
         return await service.get_by_id(operator_id)
+    except ValueError as e:
+        logger.warning("operator_id=%s Not found", operator_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.delete("/{operator_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def soft_delete(
+    operator_id: int, service: OperatorService = Depends(get_operator_service)
+):
+    try:
+        await service.soft_delete(operator_id)
     except ValueError as e:
         logger.warning("operator_id=%s Not found", operator_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

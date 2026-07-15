@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
 
 
-@router.post("/", response_model=BaseConversationResponse)
+@router.post(
+    "/", response_model=BaseConversationResponse, status_code=status.HTTP_202_ACCEPTED
+)
 async def transcribe(
     file: UploadFile = File(...),
     service: ConversationService = Depends(get_conversation_service),

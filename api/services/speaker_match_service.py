@@ -20,15 +20,17 @@ class SpeakerMatchService:
         self._operator_service = operator_service
         self._embedding_service = embedding_service
 
-    async def match_operators(self, segments: list[DialogueSegment], path: str):
+    async def match_operators(
+        self, segments: list[DialogueSegment], path: str
+    ) -> tuple[list[DialogueSegment], int | None]:
         audio_in_memory = self._embedding_service.load_audio(path)
         best_operator = await self._identify_operator(segments, audio_in_memory)
         if not best_operator:
-            return segments
+            return segments, None
 
         target_operator_vector = best_operator.embedding
         if not target_operator_vector:
-            return segments
+            return segments, None
 
         matched_segments = []
         for segment in segments:
@@ -58,7 +60,7 @@ class SpeakerMatchService:
             upd_segment = segment.model_copy(update={"speaker": resolved_role})
             matched_segments.append(upd_segment)
 
-        return matched_segments
+        return matched_segments, best_operator.id
 
     async def _identify_operator(
         self, segments: list[DialogueSegment], audio_in_memory: dict
