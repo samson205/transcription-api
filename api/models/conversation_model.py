@@ -20,7 +20,9 @@ class Conversation(Base):
         default=ProcessingStatus.PENDING,
         server_default=ProcessingStatus.PENDING.value,
     )
-    operator_id: Mapped[int | None] = mapped_column(ForeignKey("operators.id", ondelete="SET NULL"), nullable=True)
+    operator_id: Mapped[int | None] = mapped_column(
+        ForeignKey("operators.id", ondelete="SET NULL"), nullable=True
+    )
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
     language: Mapped[str | None] = mapped_column(String(10), nullable=True)
     duration: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -29,4 +31,4 @@ class Conversation(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    operator: Mapped[Optional["Operator"]] = relationship("Operator", back_populates="conversations") # type: ignore
+    operator: Mapped[Optional["Operator"]] = relationship("Operator", back_populates="conversations")  # type: ignore

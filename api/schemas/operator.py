@@ -20,6 +20,7 @@ class OperatorRead(BaseModel):
     name: Annotated[str, Field(...)]
     status: Annotated[ProcessingStatus, Field(...)]
     error_message: Annotated[str | None, Field(None)]
+    is_active: Annotated[bool, Field(...)]
     created_at: Annotated[datetime, Field(...)]
 
     model_config = ConfigDict(from_attributes=True)

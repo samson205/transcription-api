@@ -29,7 +29,7 @@ class OperatorRepository:
         async with self._session_factory() as session:
             result = await session.scalars(select(Operator))
             return list(result)
-        
+
     async def soft_delete(self, operator_id: int) -> bool:
         async with self._session_factory() as session:
             stmt = (
@@ -90,7 +90,10 @@ class OperatorRepository:
                     Operator,
                     Operator.embedding.cosine_distance(embedding).label("distance"),
                 )
-                .where(Operator.status == ProcessingStatus.SUCCESS, Operator.is_active == True)
+                .where(
+                    Operator.status == ProcessingStatus.SUCCESS,
+                    Operator.is_active == True,
+                )
                 .order_by("distance")
                 .limit(1)
             )

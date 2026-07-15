@@ -20,7 +20,9 @@ class SpeakerMatchService:
         self._operator_service = operator_service
         self._embedding_service = embedding_service
 
-    async def match_operators(self, segments: list[DialogueSegment], path: str) -> tuple[list[DialogueSegment], int | None]:
+    async def match_operators(
+        self, segments: list[DialogueSegment], path: str
+    ) -> tuple[list[DialogueSegment], int | None]:
         audio_in_memory = self._embedding_service.load_audio(path)
         best_operator = await self._identify_operator(segments, audio_in_memory)
         if not best_operator:
