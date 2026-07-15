@@ -31,7 +31,9 @@ async def create_operator(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     operator = await service.register(data)
-    task = extract_operator_embedding_task.apply_async(args=[operator.id, str(tmp_path)])
+    task = extract_operator_embedding_task.apply_async(
+        args=[operator.id, str(tmp_path)]
+    )
     logger.info(
         "operator_id=%s task_id=%s Queued for voice embedding extraction",
         operator.id,

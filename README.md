@@ -47,21 +47,15 @@ api/
 - Docker Compose
 - NVIDIA Container Toolkit (при использовании GPU)
 
-## Hugging Face
+## Hugging Face (upd: 15.07.2026)
 
-Для работы проекта необходимо получить токен Hugging Face.
+Модель `pyannote/wespeaker-voxceleb-resnet34-LM` скачивается автоматически
+при первом запуске, токен для неё не требуется — она в открытом доступе.
 
-1. Зарегистрируйтесь на https://huggingface.co
-2. Создайте токен доступа (Read).
-3. Примите условия использования моделей:
-   - pyannote/speaker-diarization-3.1
-   - pyannote/segmentation-3.0
-4. Создайте файл `.env` на основе `.env.example`
-5. Добавьте токен в `.env`:
-
-```env
-HF_TOKEN=your_huggingface_token
-```
+Опционально можно указать токен Hugging Face в `.env` (`HF_TOKEN`) — это
+снимает более строгие лимиты на количество запросов к Hugging Face Hub для
+анонимных пользователей и пригодится, если в будущем проект вернётся к
+моделям с ограниченным доступом.
 
 ## Запуск
 

@@ -1,8 +1,7 @@
 import logging
+import time
 
 from api.services.transcription_service import TranscriptionService
-from api.services.diarization_service import DiarizationService
-from api.services.alignment_service import AlignmentService
 from api.services.speaker_match_service import SpeakerMatchService
 from api.services.conversation_service import ConversationService
 from api.processors.segment_aggregator import SegmentAggregator
@@ -16,15 +15,11 @@ class ConversationOrchestrator:
     def __init__(
         self,
         transcription_service: TranscriptionService,
-        diarization_service: DiarizationService,
-        alignment_service: AlignmentService,
         speaker_match_service: SpeakerMatchService,
         segment_aggregator: SegmentAggregator,
         conversation_service: ConversationService,
     ) -> None:
         self._transcription_service = transcription_service
-        self._diarization_service = diarization_service
-        self._alignment_service = alignment_service
         self._speaker_match_service = speaker_match_service
         self._segment_aggregator = segment_aggregator
         self._conversation_service = conversation_service
@@ -40,6 +35,7 @@ class ConversationOrchestrator:
         )
 
         try:
+            start = time.monotonic()
             await self._conversation_service.update_status(
                 conversation_id, ProcessingStatus.PROCESSING, None
             )
@@ -55,29 +51,23 @@ class ConversationOrchestrator:
                 len(clean_segments),
             )
 
-            diarization, embeddings = self._diarization_service.diarize(str(path))
-            logger.info(
-                "conversation_id=%s Diarization found %d speakers",
-                conversation_id,
-                len(embeddings),
+            conversation = await self._speaker_match_service.match_operators(
+                clean_segments, path
             )
 
-            conversation_raw = self._alignment_service.align(
-                clean_segments, diarization
-            )
-            conversation = await self._speaker_match_service.match_operators(
-                conversation_raw, embeddings
-            )
             result = await self._conversation_service.save_final_result(
                 conversation_id,
                 transcription.language,
                 transcription.duration,
                 conversation,
             )
+            took_seconds = time.monotonic() - start
             logger.info(
-                "conversation_id=%s Pipeline finished, conversation saved",
+                "conversation_id=%s Pipeline finished, conversation saved took=%ds",
                 conversation_id,
+                took_seconds,
             )
+
         except Exception as e:
             result = await self._conversation_service.update_status(
                 conversation_id, ProcessingStatus.FAILURE, str(e)
