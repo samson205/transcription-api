@@ -3,11 +3,14 @@ import logging
 from pyannote.core import Segment
 from scipy.spatial.distance import cosine
 
+from api.core.config import settings
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
 from api.schemas.transcription import DialogueSegment
 
 logger = logging.getLogger(__name__)
+
+MIN_VOTES = 2
 
 
 class SpeakerMatchService:
@@ -16,9 +19,6 @@ class SpeakerMatchService:
         self._embedding_service = embedding_service
 
     async def match_operators(self, segments: list[DialogueSegment], path: str):
-        # TODO: Вынести threshold из функции в конфиг
-        threshold = 0.45
-
         audio_in_memory = self._embedding_service.load_audio(path)
         best_operator = await self._identify_operator(segments, audio_in_memory)
         if not best_operator:
@@ -33,22 +33,23 @@ class SpeakerMatchService:
             duration = segment.end - segment.start
             resolved_role = None
             if duration < 0.3:
-                continue
-
-            try:
-                excerpt = Segment(segment.start, segment.end)
-                segment_emb = self._embedding_service.extract_embedding(audio_in_memory, excerpt)
-
-                dist_to_operator = cosine(segment_emb, target_operator_vector)
-                if dist_to_operator <= threshold:
-                    resolved_role = f"Оператор ({best_operator.name})"
-                else:
-                    resolved_role = "Клиент"
-            
-            except Exception as e:
-                # TODO: Здесь нужен лог
-                print(str(e))
                 resolved_role = "Неизвестный"
+            else:
+                try:
+                    excerpt = Segment(segment.start, segment.end)
+                    segment_emb = self._embedding_service.extract_embedding(audio_in_memory, excerpt)
+
+                    dist_to_operator = cosine(segment_emb, target_operator_vector)
+                    if dist_to_operator <= settings.THRESHOLD:
+                        resolved_role = f"Оператор ({best_operator.name})"
+                    elif dist_to_operator <= settings.UNCERTAIN_BOUND:
+                        resolved_role = f"Оператора ({best_operator.name}) [Неуверенно]"
+                    else:
+                        resolved_role = "Клиент"
+                
+                except Exception:
+                    logger.exception("Failed to extract embedding for segment")
+                    resolved_role = "Неизвестный"
             
             upd_segment = segment.model_copy(update={"speaker": resolved_role})
             matched_segments.append(upd_segment)
@@ -60,8 +61,6 @@ class SpeakerMatchService:
         chunks_to_analyze = long_segments[:7]
         votes = {}
         operators = {}
-        # TODO: Вынести threshold из функции в конфиг
-        threshold = 0.45
 
         for segment in chunks_to_analyze:
             try:
@@ -70,17 +69,17 @@ class SpeakerMatchService:
 
                 operator, distance = await self._operator_service.find_matching_operator(segment_emb)
 
-                if operator and distance <= threshold:
+                if operator and distance <= settings.THRESHOLD:
                     votes[operator.id] = votes.get(operator.id, 0) + 1
                     operators[operator.id] = operator
 
-            except Exception as e:
-                # TODO: Здесь нужен лог
-                print(f"error: {str(e)}")
+            except Exception:
+                logger.exception("Failed to extract embedding for segment")
 
         if not votes:
             return None
         
         winner_id = max(votes, key=votes.get) # type: ignore
-        winner_operator = operators[winner_id]
-        return winner_operator
+        if votes[winner_id] < MIN_VOTES:
+            return None
+        return operators[winner_id]
