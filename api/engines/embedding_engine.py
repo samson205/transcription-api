@@ -31,11 +31,9 @@ class EmbeddingEngine:
             )
             model.to(torch.device(settings.DEVICE))
 
-            self._inference = Inference(
-                model, window="whole"
-            )
+            self._inference = Inference(model, window="whole")
         return self._inference
-    
+
     def extract_embedding(self, audio_in_memory: dict, excerpt: Segment | None):
         inference = self._load_inference()
         if excerpt is None:

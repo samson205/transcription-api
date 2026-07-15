@@ -14,7 +14,9 @@ MIN_VOTES = 2
 
 
 class SpeakerMatchService:
-    def __init__(self, operator_service: OperatorService, embedding_service: EmbeddingService) -> None:
+    def __init__(
+        self, operator_service: OperatorService, embedding_service: EmbeddingService
+    ) -> None:
         self._operator_service = operator_service
         self._embedding_service = embedding_service
 
@@ -23,11 +25,11 @@ class SpeakerMatchService:
         best_operator = await self._identify_operator(segments, audio_in_memory)
         if not best_operator:
             return segments
-        
+
         target_operator_vector = best_operator.embedding
         if not target_operator_vector:
             return segments
-        
+
         matched_segments = []
         for segment in segments:
             duration = segment.end - segment.start
@@ -37,7 +39,9 @@ class SpeakerMatchService:
             else:
                 try:
                     excerpt = Segment(segment.start, segment.end)
-                    segment_emb = self._embedding_service.extract_embedding(audio_in_memory, excerpt)
+                    segment_emb = self._embedding_service.extract_embedding(
+                        audio_in_memory, excerpt
+                    )
 
                     dist_to_operator = cosine(segment_emb, target_operator_vector)
                     if dist_to_operator <= settings.THRESHOLD:
@@ -46,17 +50,19 @@ class SpeakerMatchService:
                         resolved_role = f"Оператора ({best_operator.name}) [Неуверенно]"
                     else:
                         resolved_role = "Клиент"
-                
+
                 except Exception:
                     logger.exception("Failed to extract embedding for segment")
                     resolved_role = "Неизвестный"
-            
+
             upd_segment = segment.model_copy(update={"speaker": resolved_role})
             matched_segments.append(upd_segment)
 
         return matched_segments
 
-    async def _identify_operator(self, segments: list[DialogueSegment], audio_in_memory: dict):
+    async def _identify_operator(
+        self, segments: list[DialogueSegment], audio_in_memory: dict
+    ):
         long_segments = sorted(segments, key=lambda s: (s.end - s.start), reverse=True)
         chunks_to_analyze = long_segments[:7]
         votes = {}
@@ -65,9 +71,13 @@ class SpeakerMatchService:
         for segment in chunks_to_analyze:
             try:
                 excerpt = Segment(segment.start, segment.end)
-                segment_emb = self._embedding_service.extract_embedding(audio_in_memory, excerpt)
+                segment_emb = self._embedding_service.extract_embedding(
+                    audio_in_memory, excerpt
+                )
 
-                operator, distance = await self._operator_service.find_matching_operator(segment_emb)
+                operator, distance = (
+                    await self._operator_service.find_matching_operator(segment_emb)
+                )
 
                 if operator and distance <= settings.THRESHOLD:
                     votes[operator.id] = votes.get(operator.id, 0) + 1
@@ -78,8 +88,8 @@ class SpeakerMatchService:
 
         if not votes:
             return None
-        
-        winner_id = max(votes, key=votes.get) # type: ignore
+
+        winner_id = max(votes, key=votes.get)  # type: ignore
         if votes[winner_id] < MIN_VOTES:
             return None
         return operators[winner_id]

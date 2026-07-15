@@ -64,7 +64,8 @@ class ConversationOrchestrator:
             took_seconds = time.monotonic() - start
             logger.info(
                 "conversation_id=%s Pipeline finished, conversation saved took=%ds",
-                conversation_id, took_seconds
+                conversation_id,
+                took_seconds,
             )
 
         except Exception as e:
