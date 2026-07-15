@@ -51,12 +51,13 @@ class ConversationOrchestrator:
                 len(clean_segments),
             )
 
-            conversation = await self._speaker_match_service.match_operators(
+            conversation, operator_id = await self._speaker_match_service.match_operators(
                 clean_segments, path
             )
 
             result = await self._conversation_service.save_final_result(
                 conversation_id,
+                operator_id,
                 transcription.language,
                 transcription.duration,
                 conversation,

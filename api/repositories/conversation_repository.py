@@ -46,6 +46,7 @@ class ConversationRepository:
     async def save_results(
         self,
         conversation_id: int,
+        operator_id: int | None,
         language: str,
         duration: float,
         segments: list[dict[str, Any]],
@@ -55,6 +56,7 @@ class ConversationRepository:
                 update(Conversation)
                 .where(Conversation.id == conversation_id)
                 .values(
+                    operator_id=operator_id,
                     language=language,
                     duration=duration,
                     segments=segments,

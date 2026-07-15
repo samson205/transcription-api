@@ -33,12 +33,14 @@ class ConversationService:
     async def save_final_result(
         self,
         conversation_id: int,
+        operator_id: int | None,
         language: str,
         duration: float,
         segments: list[DialogueSegment],
     ) -> Conversation:
         return await self._repository.save_results(
             conversation_id,
+            operator_id,
             language,
             duration,
             [s.model_dump() for s in segments],
