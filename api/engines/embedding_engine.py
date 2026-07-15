@@ -21,13 +21,13 @@ class EmbeddingEngine:
                 repo_id="pyannote/wespeaker-voxceleb-resnet34-LM",
                 repo_type="model",
                 cache_dir=str(pyannote_cache_dir),
-                token=settings.HF_TOKEN,
+                token=settings.HF_TOKEN or None,
                 local_files_only=settings.LOCAL_FILES_ONLY,
             )
             checkpoint_path = Path(model_dir) / "pytorch_model.bin"
 
             model = Model.from_pretrained(
-                checkpoint_path, use_auth_token=settings.HF_TOKEN
+                checkpoint_path, use_auth_token=settings.HF_TOKEN or None
             )
             model.to(torch.device(settings.DEVICE))
 
