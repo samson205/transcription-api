@@ -18,8 +18,7 @@ class OperatorVoiceOrchestrator:
             await self._operator_service.update_status(
                 operator_id, ProcessingStatus.PROCESSING, None
             )
-            audio_in_memory = self._embedding_service.load_audio(file_path)
-            embedding = self._embedding_service.extract_embedding(audio_in_memory)
+            embedding = self._embedding_service.extract_averaged_embedding(file_path)
             await self._operator_service.update_embedding(operator_id, embedding)
         except Exception as e:
             await self._operator_service.update_status(
