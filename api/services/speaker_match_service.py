@@ -10,8 +10,6 @@ from api.schemas.transcription import DialogueSegment
 
 logger = logging.getLogger(__name__)
 
-MIN_VOTES = 2
-
 
 class SpeakerMatchService:
     def __init__(
@@ -49,7 +47,7 @@ class SpeakerMatchService:
                     if dist_to_operator <= settings.THRESHOLD:
                         resolved_role = f"Оператор ({best_operator.name})"
                     elif dist_to_operator <= settings.UNCERTAIN_BOUND:
-                        resolved_role = f"Оператора ({best_operator.name}) [Неуверенно]"
+                        resolved_role = f"Оператор ({best_operator.name}) [Неуверенно]"
                     else:
                         resolved_role = "Клиент"
 
@@ -65,8 +63,9 @@ class SpeakerMatchService:
     async def _identify_operator(
         self, segments: list[DialogueSegment], audio_in_memory: dict
     ):
+        duration = audio_in_memory["waveform"].shape[1] / audio_in_memory["sample_rate"]
         long_segments = sorted(segments, key=lambda s: (s.end - s.start), reverse=True)
-        chunks_to_analyze = long_segments[:7]
+        chunks_to_analyze = long_segments[:10]
         votes = {}
         operators = {}
 
@@ -80,18 +79,29 @@ class SpeakerMatchService:
                 operator, distance = (
                     await self._operator_service.find_matching_operator(segment_emb)
                 )
+                if not operator:
+                    continue
 
-                if operator and distance <= settings.THRESHOLD:
-                    votes[operator.id] = votes.get(operator.id, 0) + 1
+                if distance <= settings.UNCERTAIN_BOUND:
+                    weight = max(0.0, 1.0 - distance / settings.UNCERTAIN_BOUND) * min(duration / 3.0, 1.0)
+                    votes[operator.id] = votes.get(operator.id, 0) + weight
                     operators[operator.id] = operator
 
             except Exception:
                 logger.exception("Failed to extract embedding for segment")
 
+        first_segment = min(segments, key=lambda s: s.start)
+        excerpt = Segment(first_segment.start, first_segment.end)
+        segment_emb = self._embedding_service.extract_embedding(
+            audio_in_memory, excerpt
+        )
+        operator, distance = await self._operator_service.find_matching_operator(segment_emb)
+        if operator and distance <= settings.THRESHOLD:
+            votes[operator.id] = votes.get(operator.id, 0) + 1
+            operators[operator.id] = operator
+
         if not votes:
             return None
 
         winner_id = max(votes, key=votes.get)  # type: ignore
-        if votes[winner_id] < MIN_VOTES:
-            return None
         return operators[winner_id]
