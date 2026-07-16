@@ -103,8 +103,5 @@ class SpeakerMatchService:
         if not votes:
             return None
 
-        total_votes = sum(votes.values())
         winner_id = max(votes, key=votes.get)  # type: ignore
-        if votes[winner_id] / total_votes < 0.5:
-            return None
         return operators[winner_id]

@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_BYTES: int = 100 * 1024 * 1024
 
     THRESHOLD: float = 0.45
-    UNCERTAIN_BOUND: float = 0.55
+    UNCERTAIN_BOUND: float = 0.5
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

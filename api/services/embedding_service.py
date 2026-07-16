@@ -22,7 +22,7 @@ class EmbeddingService:
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
 
-        waveform = self._normalize_loudness(waveform, target_rms=0.05)
+        # waveform = self._normalize_loudness(waveform, target_rms=0.05)
         waveform = self._compress_dynamic_range(waveform)
 
         return {"waveform": waveform, "sample_rate": sample_rate}
