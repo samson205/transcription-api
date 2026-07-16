@@ -22,6 +22,9 @@ class EmbeddingService:
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
 
+        waveform = self._normalize_loudness(waveform, target_rms=0.05)
+        waveform = self._compress_dynamic_range(waveform)
+
         return {"waveform": waveform, "sample_rate": sample_rate}
 
     def extract_embedding(
@@ -47,6 +50,30 @@ class EmbeddingService:
             raise ValueError(f"No non-silent windwos found in {path} - cannot build reference embedding")
         
         return np.mean(embeddings, axis=0).tolist()
+
+    def _normalize_loudness(self, waveform: torch.Tensor, target_rms: float) -> torch.Tensor:
+        current_rms = torch.sqrt(torch.mean(waveform ** 2))
+        if current_rms < 1e-8:
+            return waveform
+
+        gain = target_rms / current_rms
+        normalized = waveform * gain
+
+        peak = normalized.abs().max()
+        if peak > 1.0:
+            normalized = normalized / peak
+
+        return normalized
+    
+    def _compress_dynamic_range(self, waveform: torch.Tensor, threshold: float = 0.1, ratio: float = 4.0) -> torch.Tensor:
+        abs_waveform = waveform.abs()
+        over_threshold = abs_waveform > threshold
+        
+        compressed = waveform.clone()
+        compressed[over_threshold] = torch.sign(waveform[over_threshold]) * (
+            threshold + (abs_waveform[over_threshold] - threshold) / ratio
+        )
+        return compressed
     
     def _is_silent(self, audio_in_memory: dict, excerpt: Segment, rms_threshold: float = 0.01) -> bool:
         waveform = audio_in_memory["waveform"]
