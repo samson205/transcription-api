@@ -1,42 +1,37 @@
-FROM ubuntu:24.04
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PYTHONPATH=/home/app
 
-RUN apt-get update && apt-get install -y \
-    python3-pip \
-    python3-venv \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     git \
     gnupg \
+    gcc \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
-
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /home/app
 
-COPY requirements.txt .
-
 RUN pip install --upgrade pip setuptools wheel
 
-RUN pip install \
+RUN pip install --no-cache-dir \
     --index-url https://download.pytorch.org/whl/cu124 \
     torch==2.4.1 \
     torchaudio==2.4.1
-
-RUN pip install -r requirements.txt
+    
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY api ./api
-COPY migrations migrations
+COPY migrations ./migrations
 COPY .env .
 COPY alembic.ini .
 
-RUN useradd -m app
-
-RUN mkdir -p /home/app/ml_models /home/app/temp \
+RUN useradd -m app \
+    && mkdir -p /home/app/ml_models /home/app/temp \
     && chown -R app:app /home/app
 
 USER app
