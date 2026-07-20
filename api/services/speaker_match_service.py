@@ -104,4 +104,6 @@ class SpeakerMatchService:
             return None
 
         winner_id = max(votes, key=votes.get)  # type: ignore
+        if votes[winner_id] < 0.5:
+            return None
         return operators[winner_id]

@@ -1,5 +1,6 @@
 from faster_whisper.transcribe import Segment, Word
 
+from api.core.config import settings
 from api.schemas.transcription import DialogueSegment
 
 
@@ -14,6 +15,16 @@ class SegmentAggregator:
 
         for segment in segments:
             text_chunk = getattr(segment, "text", getattr(segment, "word", "")).strip()
+            if not text_chunk:
+                continue
+
+            if current is not None and settings.WORD_TIMESTAMPS:
+                is_capital = text_chunk[0].isupper()
+                if is_capital:
+                    current = self._finalize_segment(current)
+                    result.append(current)
+                    current = None
+
             if current is None:
                 current = DialogueSegment(
                     start=segment.start,
@@ -30,6 +41,13 @@ class SegmentAggregator:
                 current = None
 
         if current:
+            current = self._finalize_segment(current)
             result.append(current)
 
         return result
+    
+    def _finalize_segment(self, segment: DialogueSegment) -> DialogueSegment:
+        segment.text = segment.text.strip()
+        if segment.text and not segment.text.endswith((".", "!", "?")):
+            segment.text += "."
+        return segment
