@@ -42,6 +42,13 @@ async def create_operator(
     return operator
 
 
+@router.get("/", response_model=list[OperatorRead])
+async def get_all_operators(
+    service: OperatorService = Depends(get_operator_service)
+):
+    return await service.get_all()
+
+
 @router.get("/{operator_id}", response_model=OperatorRead)
 async def get_operator_by_id(
     operator_id: int, service: OperatorService = Depends(get_operator_service)

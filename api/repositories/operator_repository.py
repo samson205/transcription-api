@@ -27,7 +27,7 @@ class OperatorRepository:
 
     async def get_all(self) -> list[Operator]:
         async with self._session_factory() as session:
-            result = await session.scalars(select(Operator))
+            result = await session.scalars(select(Operator).order_by(Operator.id))
             return list(result)
 
     async def soft_delete(self, operator_id: int) -> bool:
