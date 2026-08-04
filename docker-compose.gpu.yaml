@@ -20,6 +20,14 @@ services:
       db:
         condition: service_healthy
 
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
   worker:
     build: .
     image: transcription-api:latest
@@ -40,6 +48,14 @@ services:
 
     depends_on:
       - redis
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   redis:
     image: redis:8-alpine
