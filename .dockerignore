@@ -12,3 +12,5 @@ models
 .vscode
 
 *.pyc
+
+.env

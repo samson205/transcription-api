@@ -27,7 +27,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY api ./api
 COPY migrations ./migrations
-COPY .env .
 COPY alembic.ini .
 
 RUN useradd -m app \
