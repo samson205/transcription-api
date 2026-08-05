@@ -266,15 +266,15 @@ class SpeakerMatchService:
 
         x = np.stack([embeddings[(s.start, s.end)] for s in valid_candidates])
 
-        сlusterer = AgglomerativeClustering(
+        clusterer = AgglomerativeClustering(
             n_clusters=2, metric="cosine", linkage="average"
         )
 
-        labels = сlusterer.fit_predict(x)
+        labels = clusterer.fit_predict(x)
 
         clusters = {}
         for segment, label in zip(valid_candidates, labels):
-            clusters[label].append(segment)
+            clusters[label].setdefault(label, []).append(segment)
         return clusters
 
     def _cluster_centroid(self, cluster: list[DialogueSegment], embeddings: dict):
