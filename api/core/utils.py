@@ -19,7 +19,7 @@ def run_async_coro(coro):
 
 
 def release_gpu_memory() -> None:
+    logger.info("Memory cleanup")
     gc.collect()
     if torch.cuda.is_available() and settings.DEVICE == "cuda":
         torch.cuda.empty_cache()
-        logger.info("GPU memory cleanup")

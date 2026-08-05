@@ -32,7 +32,7 @@ async def create_operator(
 
     operator = await service.register(data)
     task = extract_operator_embedding_task.apply_async(
-        args=[operator.id, str(tmp_path)]
+        args=[operator.id, str(tmp_path), file.filename]
     )
     logger.info(
         "operator_id=%s task_id=%s Queued for voice embedding extraction",
@@ -40,6 +40,13 @@ async def create_operator(
         task.id,
     )
     return operator
+
+
+@router.get("/", response_model=list[OperatorRead])
+async def get_all_operators(
+    service: OperatorService = Depends(get_operator_service)
+):
+    return await service.get_all()
 
 
 @router.get("/{operator_id}", response_model=OperatorRead)
