@@ -1,7 +1,9 @@
 import logging
 
+import numpy as np
 from pyannote.core import Segment
 from scipy.spatial.distance import cosine
+from sklearn.cluster import AgglomerativeClustering
 
 from api.core.config import settings
 from api.services.operator_service import OperatorService
@@ -12,6 +14,16 @@ logger = logging.getLogger(__name__)
 
 
 class SpeakerMatchService:
+    _MAX_CANDIDATES: int = 20
+
+    _MIN_SEGMENT_DURATION = 2.0
+    _MAX_SEGMENT_DURATION = 10.0
+
+    _MIN_CLUSTER_SHARE = 0.15
+    _MIN_CLUSTER_MARGIN = 0.04
+
+    _MIN_SEGMENTS_FOR_CLUSTERING = 12
+
     def __init__(
         self, operator_service: OperatorService, embedding_service: EmbeddingService
     ) -> None:
@@ -56,6 +68,8 @@ class SpeakerMatchService:
                 segment_emb = embeddings[key]
                 if segment_emb is None:
                     resolved_role = "Неизвестный"
+                    upd_segment = segment.model_copy(update={"speaker": resolved_role})
+                    matched_segments.append(upd_segment)
                     continue
 
                 dist_to_operator = cosine(segment_emb, target_operator_vector)
@@ -74,17 +88,49 @@ class SpeakerMatchService:
     async def _identify_operator(
         self, segments: list[DialogueSegment], embeddings: dict, original_filename: str
     ):
-        candidates = [s for s in segments if 2 <= s.end - s.start <= 10]
-        step = max(1, len(candidates) // 20)
-        chunks_to_analyze = candidates[::step][:20]
+        operator = await self._identify_operator_simple(
+            segments, embeddings,
+        )
 
-        votes = {}
+        if operator is not None:
+            logger.info("Operator found by simple strategy file=%s", original_filename)
+            return operator
+
+        candidates = [s for s in segments if 2 <= s.end - s.start <= 10]
+        if len(candidates) >= self._MIN_SEGMENTS_FOR_CLUSTERING:
+            operator = await self._identify_operator_by_cluster(candidates, embeddings,)
+
+            if operator is not None:
+                logger.info("Operator found by cluster strategy file=%s", original_filename)
+                return operator
+
+        logger.warning("Failed to identify operator file=%s", original_filename)
+        return None
+
+    async def _identify_operator_simple(self, segments: list[DialogueSegment], embeddings: dict):
+        candidates = [s for s in segments if self._MIN_SEGMENT_DURATION <= s.end - s.start <= self._MAX_SEGMENT_DURATION]
+        if len(candidates) <= self._MAX_CANDIDATES:
+            chunks_to_analyze = candidates
+        else:
+            step = max(1, len(candidates) // self._MAX_CANDIDATES)
+            chunks_to_analyze = candidates[::step][:self._MAX_CANDIDATES]
+
+        num_chunks = len(chunks_to_analyze)
+        if num_chunks < 10:
+            min_margin = 0.03
+        elif num_chunks < 20:
+            min_margin = 0.04
+        else:
+            min_margin = 0.05
+
         operators = {}
+        operator_distances = {}
 
         for segment in chunks_to_analyze:
             key = (segment.start, segment.end)
             segment_emb = embeddings[key]
-            segment_duration = segment.end - segment.start
+            if segment_emb is None:
+                continue
 
             operator, distance = await self._operator_service.find_matching_operator(
                 segment_emb
@@ -92,19 +138,139 @@ class SpeakerMatchService:
             if not operator:
                 continue
 
-            if distance <= settings.UNCERTAIN_BOUND:
-                weight = max(0.0, 1.0 - distance / settings.UNCERTAIN_BOUND) * min(
-                    segment_duration / 3.0, 1.0
-                )
-                votes[operator.id] = votes.get(operator.id, 0) + weight
+            if distance <= settings.THRESHOLD:
+                operator_distances.setdefault(operator.id, []).append(distance)
                 operators[operator.id] = operator
 
-        if not votes:
-            logger.warning("No suitable operator found file=%s", original_filename)
+        scores = []
+        for op_id, dists in operator_distances.items():
+            # score = np.percentile(dists, 25)
+            sorted_dists = sorted(dists)
+            top_dists = sorted_dists[:min(2, len(sorted_dists))]
+            score = np.mean(top_dists)
+            logger.info("operator=%s score=%s", operators[op_id].name, str(score))
+            scores.append(
+                (
+                    score,
+                    op_id,
+                )
+            )
+
+        if not scores:
             return None
 
-        winner_id = max(votes, key=votes.get)  # type: ignore
-        if votes[winner_id] < 0.5:
-            logger.warning("No suitable operator found file=%s", original_filename)
+        scores.sort()
+        best_score, best_id = scores[0]
+        if best_score > settings.THRESHOLD:
             return None
-        return operators[winner_id]
+
+        if len(scores) > 1:
+            second_score, _ = scores[1]
+            if second_score - best_score < min_margin:
+                return None
+        
+        return operators[best_id]
+
+    async def _identify_operator_by_cluster(self, segments: list[DialogueSegment], embeddings: dict):
+        candidates = [s for s in segments if self._MIN_SEGMENT_DURATION <= s.end - s.start <= self._MAX_SEGMENT_DURATION]
+        clusters = self._cluster_embeddings(
+            candidates,
+            embeddings,
+        )
+
+        if clusters is None:
+            return None
+
+        cluster_scores = []
+        total_duration = sum(s.end - s.start for s in segments)
+        for cluster_id, cluster_segments in clusters.items():
+            centroid = self._cluster_centroid(cluster_segments, embeddings)
+            operator, distance = await self._operator_service.find_matching_operator(centroid)
+            if not operator:
+                continue
+
+            cluster_duration = sum(
+                s.end - s.start
+                for s in cluster_segments
+            )
+            share = cluster_duration / total_duration
+            if share < self._MIN_CLUSTER_SHARE:
+                continue
+
+            if len(cluster_segments) < 3:
+                continue
+
+            logger.info(
+                "cluster=%s operator=%s distance=%.3f duration=%.1f",
+                cluster_id,
+                operator.name,
+                distance,
+                cluster_duration,
+            )
+
+            cluster_scores.append(
+                (
+                    distance,
+                    total_duration,
+                    operator,
+                )
+            )
+
+        if not cluster_scores:
+            return None
+
+        cluster_scores.sort(
+            key=lambda x: x[0]
+        )
+
+        best_distance, _, best_operator = cluster_scores[0]
+        if len(cluster_scores) > 1:
+            second_distance, _, _ = cluster_scores[1]
+
+            if second_distance - best_distance < self._MIN_CLUSTER_MARGIN:
+                logger.info(
+                    "Clusters are too close: %.3f vs %.3f",
+                    best_distance,
+                    second_distance,
+                )
+                return None
+
+        if best_distance > settings.THRESHOLD:
+            return None
+
+        return best_operator
+
+    def _cluster_embeddings(self, candidates: list, embeddings: dict):
+        valid_candidates = [
+            s for s in candidates
+            if embeddings[(s.start, s.end)] is not None
+        ]
+
+        x = np.stack([
+            embeddings[(s.start, s.end)]
+            for s in valid_candidates
+        ])
+
+        сlusterer = AgglomerativeClustering(
+            n_clusters=2,
+            metric="cosine",
+            linkage="average"
+        )
+
+        labels = сlusterer.fit_predict(x)
+
+        clusters = {}
+        for segment, label in zip(valid_candidates, labels):
+            clusters[label].append(segment)
+        return clusters
+
+    def _cluster_centroid(self, cluster: list[DialogueSegment], embeddings: dict):
+        vectors = [
+            embeddings[(s.start, s.end)]
+            for s in cluster
+        ]
+
+        centroid = np.mean(vectors, axis=0)
+        centroid /= np.linalg.norm(centroid)
+        return centroid.tolist()
+    

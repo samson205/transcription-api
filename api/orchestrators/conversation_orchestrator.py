@@ -40,7 +40,7 @@ class ConversationOrchestrator:
                 conversation_id, ProcessingStatus.PROCESSING, None
             )
 
-            transcription = self._transcription_service.transcribe_file(str(path))
+            transcription = self._transcription_service.transcribe_file(str(path), original_filename)
 
             clean_segments = self._segment_aggregator.merge_by_sentences(
                 transcription.segments

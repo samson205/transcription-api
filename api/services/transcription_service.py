@@ -11,7 +11,7 @@ class TranscriptionService:
     def __init__(self, whisper: WhisperEngine) -> None:
         self._whisper = whisper
 
-    def transcribe_file(self, path: str):
+    def transcribe_file(self, path: str, original_filename: str):
         segments, info = self._whisper.transcribe(path)
 
         start = time.monotonic()
@@ -25,7 +25,7 @@ class TranscriptionService:
 
         logger.info(
             "Transcription done file=%s, lang=%s, duration=%.2fs, segments=%d, took=%.2fs",
-            path,
+            original_filename,
             info.language,
             info.duration,
             len(data_to_return),
