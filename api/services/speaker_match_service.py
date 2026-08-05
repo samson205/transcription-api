@@ -274,7 +274,7 @@ class SpeakerMatchService:
 
         clusters = {}
         for segment, label in zip(valid_candidates, labels):
-            clusters[label].setdefault(label, []).append(segment)
+            clusters.setdefault(int(label), []).append(segment)
         return clusters
 
     def _cluster_centroid(self, cluster: list[DialogueSegment], embeddings: dict):
