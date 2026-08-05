@@ -7,7 +7,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    git \
     gnupg \
     gcc \
     python3-dev \
@@ -15,9 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /home/app
 
-RUN pip install --upgrade pip setuptools wheel
-
-RUN pip install --no-cache-dir \
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir \
     --index-url https://download.pytorch.org/whl/cu124 \
     torch==2.4.1 \
     torchaudio==2.4.1
@@ -25,9 +23,9 @@ RUN pip install --no-cache-dir \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY api ./api
 COPY migrations ./migrations
 COPY alembic.ini .
+COPY api ./api
 
 RUN useradd -m app \
     && mkdir -p /home/app/ml_models /home/app/temp \
