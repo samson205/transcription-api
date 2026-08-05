@@ -11,7 +11,7 @@ class OperatorService:
     async def register(self, data: OperatorCreate) -> Operator:
         """Создает нового оператора в БД"""
         return await self._repo.create(data.name)
-    
+
     async def get_all(self) -> list[Operator]:
         return await self._repo.get_all()
 

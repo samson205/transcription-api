@@ -32,14 +32,16 @@ class EmbeddingService:
     ) -> list[float]:
         result = self._embedding_engine.extract_embedding(audio_in_memory, excerpt)
         return result.tolist()  # type: ignore
-    
-    def extract_averaged_embedding(self, path: str, window: float = 2.0, step: float = 1.0) -> list[float]:
+
+    def extract_averaged_embedding(
+        self, path: str, window: float = 2.0, step: float = 1.0
+    ) -> list[float]:
         audio_in_memory = self.load_audio(path)
         duration = audio_in_memory["waveform"].shape[1] / audio_in_memory["sample_rate"]
 
         if duration < window:
             return self.extract_embedding(audio_in_memory, excerpt=None)
-        
+
         embeddings = []
         for excerpt in self._sliding_windows(duration, window, step):
             if self._is_silent(audio_in_memory, excerpt=excerpt):
@@ -47,12 +49,16 @@ class EmbeddingService:
             embeddings.append(self.extract_embedding(audio_in_memory, excerpt=excerpt))
 
         if not embeddings:
-            raise ValueError(f"No non-silent windwos found in {path} - cannot build reference embedding")
-        
+            raise ValueError(
+                f"No non-silent windwos found in {path} - cannot build reference embedding"
+            )
+
         return np.mean(embeddings, axis=0).tolist()
 
-    def _normalize_loudness(self, waveform: torch.Tensor, target_rms: float) -> torch.Tensor:
-        current_rms = torch.sqrt(torch.mean(waveform ** 2))
+    def _normalize_loudness(
+        self, waveform: torch.Tensor, target_rms: float
+    ) -> torch.Tensor:
+        current_rms = torch.sqrt(torch.mean(waveform**2))
         if current_rms < 1e-8:
             return waveform
 
@@ -64,27 +70,35 @@ class EmbeddingService:
             normalized = normalized / peak
 
         return normalized
-    
-    def _compress_dynamic_range(self, waveform: torch.Tensor, threshold: float = 0.1, ratio: float = 4.0) -> torch.Tensor:
+
+    def _compress_dynamic_range(
+        self, waveform: torch.Tensor, threshold: float = 0.1, ratio: float = 4.0
+    ) -> torch.Tensor:
         abs_waveform = waveform.abs()
         over_threshold = abs_waveform > threshold
-        
+
         compressed = waveform.clone()
         compressed[over_threshold] = torch.sign(waveform[over_threshold]) * (
             threshold + (abs_waveform[over_threshold] - threshold) / ratio
         )
         return compressed
-    
-    def _is_silent(self, audio_in_memory: dict, excerpt: Segment, rms_threshold: float = 0.01) -> bool:
+
+    def _is_silent(
+        self, audio_in_memory: dict, excerpt: Segment, rms_threshold: float = 0.01
+    ) -> bool:
         waveform = audio_in_memory["waveform"]
         sample_rate = audio_in_memory["sample_rate"]
-        chunk = waveform[:, int(excerpt.start * sample_rate):int(excerpt.end * sample_rate)]
+        chunk = waveform[
+            :, int(excerpt.start * sample_rate) : int(excerpt.end * sample_rate)
+        ]
         if chunk.numel() == 0:
             return True
-        rms = torch.sqrt(torch.mean(chunk ** 2))
+        rms = torch.sqrt(torch.mean(chunk**2))
         return rms.item() < rms_threshold
 
-    def _sliding_windows(self, duration: float, window: float, step: float) -> list[Segment]:
+    def _sliding_windows(
+        self, duration: float, window: float, step: float
+    ) -> list[Segment]:
         windows = []
         start = 0.0
         while start + window <= duration:
@@ -96,4 +110,3 @@ class EmbeddingService:
             windows.append(Segment(tail_start, duration))
 
         return windows
-    

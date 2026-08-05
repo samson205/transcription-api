@@ -45,7 +45,7 @@ class SegmentAggregator:
             result.append(current)
 
         return result
-    
+
     def _finalize_segment(self, segment: DialogueSegment) -> DialogueSegment:
         segment.text = segment.text.strip()
         if segment.text and not segment.text.endswith((".", "!", "?")):

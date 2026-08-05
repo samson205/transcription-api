@@ -89,7 +89,8 @@ class SpeakerMatchService:
         self, segments: list[DialogueSegment], embeddings: dict, original_filename: str
     ):
         operator = await self._identify_operator_simple(
-            segments, embeddings,
+            segments,
+            embeddings,
         )
 
         if operator is not None:
@@ -98,22 +99,35 @@ class SpeakerMatchService:
 
         candidates = [s for s in segments if 2 <= s.end - s.start <= 10]
         if len(candidates) >= self._MIN_SEGMENTS_FOR_CLUSTERING:
-            operator = await self._identify_operator_by_cluster(candidates, embeddings,)
+            operator = await self._identify_operator_by_cluster(
+                candidates,
+                embeddings,
+            )
 
             if operator is not None:
-                logger.info("Operator found by cluster strategy file=%s", original_filename)
+                logger.info(
+                    "Operator found by cluster strategy file=%s", original_filename
+                )
                 return operator
 
         logger.warning("Failed to identify operator file=%s", original_filename)
         return None
 
-    async def _identify_operator_simple(self, segments: list[DialogueSegment], embeddings: dict):
-        candidates = [s for s in segments if self._MIN_SEGMENT_DURATION <= s.end - s.start <= self._MAX_SEGMENT_DURATION]
+    async def _identify_operator_simple(
+        self, segments: list[DialogueSegment], embeddings: dict
+    ):
+        candidates = [
+            s
+            for s in segments
+            if self._MIN_SEGMENT_DURATION
+            <= s.end - s.start
+            <= self._MAX_SEGMENT_DURATION
+        ]
         if len(candidates) <= self._MAX_CANDIDATES:
             chunks_to_analyze = candidates
         else:
             step = max(1, len(candidates) // self._MAX_CANDIDATES)
-            chunks_to_analyze = candidates[::step][:self._MAX_CANDIDATES]
+            chunks_to_analyze = candidates[::step][: self._MAX_CANDIDATES]
 
         num_chunks = len(chunks_to_analyze)
         if num_chunks < 10:
@@ -146,7 +160,7 @@ class SpeakerMatchService:
         for op_id, dists in operator_distances.items():
             # score = np.percentile(dists, 25)
             sorted_dists = sorted(dists)
-            top_dists = sorted_dists[:min(2, len(sorted_dists))]
+            top_dists = sorted_dists[: min(2, len(sorted_dists))]
             score = np.mean(top_dists)
             logger.info("operator=%s score=%s", operators[op_id].name, str(score))
             scores.append(
@@ -168,11 +182,19 @@ class SpeakerMatchService:
             second_score, _ = scores[1]
             if second_score - best_score < min_margin:
                 return None
-        
+
         return operators[best_id]
 
-    async def _identify_operator_by_cluster(self, segments: list[DialogueSegment], embeddings: dict):
-        candidates = [s for s in segments if self._MIN_SEGMENT_DURATION <= s.end - s.start <= self._MAX_SEGMENT_DURATION]
+    async def _identify_operator_by_cluster(
+        self, segments: list[DialogueSegment], embeddings: dict
+    ):
+        candidates = [
+            s
+            for s in segments
+            if self._MIN_SEGMENT_DURATION
+            <= s.end - s.start
+            <= self._MAX_SEGMENT_DURATION
+        ]
         clusters = self._cluster_embeddings(
             candidates,
             embeddings,
@@ -185,14 +207,13 @@ class SpeakerMatchService:
         total_duration = sum(s.end - s.start for s in segments)
         for cluster_id, cluster_segments in clusters.items():
             centroid = self._cluster_centroid(cluster_segments, embeddings)
-            operator, distance = await self._operator_service.find_matching_operator(centroid)
+            operator, distance = await self._operator_service.find_matching_operator(
+                centroid
+            )
             if not operator:
                 continue
 
-            cluster_duration = sum(
-                s.end - s.start
-                for s in cluster_segments
-            )
+            cluster_duration = sum(s.end - s.start for s in cluster_segments)
             share = cluster_duration / total_duration
             if share < self._MIN_CLUSTER_SHARE:
                 continue
@@ -219,9 +240,7 @@ class SpeakerMatchService:
         if not cluster_scores:
             return None
 
-        cluster_scores.sort(
-            key=lambda x: x[0]
-        )
+        cluster_scores.sort(key=lambda x: x[0])
 
         best_distance, _, best_operator = cluster_scores[0]
         if len(cluster_scores) > 1:
@@ -242,19 +261,13 @@ class SpeakerMatchService:
 
     def _cluster_embeddings(self, candidates: list, embeddings: dict):
         valid_candidates = [
-            s for s in candidates
-            if embeddings[(s.start, s.end)] is not None
+            s for s in candidates if embeddings[(s.start, s.end)] is not None
         ]
 
-        x = np.stack([
-            embeddings[(s.start, s.end)]
-            for s in valid_candidates
-        ])
+        x = np.stack([embeddings[(s.start, s.end)] for s in valid_candidates])
 
         сlusterer = AgglomerativeClustering(
-            n_clusters=2,
-            metric="cosine",
-            linkage="average"
+            n_clusters=2, metric="cosine", linkage="average"
         )
 
         labels = сlusterer.fit_predict(x)
@@ -265,12 +278,8 @@ class SpeakerMatchService:
         return clusters
 
     def _cluster_centroid(self, cluster: list[DialogueSegment], embeddings: dict):
-        vectors = [
-            embeddings[(s.start, s.end)]
-            for s in cluster
-        ]
+        vectors = [embeddings[(s.start, s.end)] for s in cluster]
 
         centroid = np.mean(vectors, axis=0)
         centroid /= np.linalg.norm(centroid)
         return centroid.tolist()
-    
