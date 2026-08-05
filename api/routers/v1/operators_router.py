@@ -32,7 +32,7 @@ async def create_operator(
 
     operator = await service.register(data)
     task = extract_operator_embedding_task.apply_async(
-        args=[operator.id, str(tmp_path)]
+        args=[operator.id, str(tmp_path), file.filename]
     )
     logger.info(
         "operator_id=%s task_id=%s Queued for voice embedding extraction",

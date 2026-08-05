@@ -22,7 +22,7 @@ def transcribe_task(conversation_id: int, path: str, original_filename: str):
                 conversation_id, original_filename, path
             )
         )
-        logger.info("conversation_id=%s Completed", conversation_id)
+        logger.info("conversation_id=%s Transcription completed", conversation_id)
     except Exception:
         logger.exception(
             "conversation_id=%s Failed processing file=%s",

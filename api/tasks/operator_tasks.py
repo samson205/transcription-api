@@ -9,21 +9,23 @@ logger = logging.getLogger(__name__)
 
 
 @celery.task
-def extract_operator_embedding_task(operator_id: int, file_path: str):
+def extract_operator_embedding_task(
+    operator_id: int, file_path: str, original_filename: str | None
+):
     logger.info(
         "operator_id=%s Starting voice embedding extraction file=%s",
         operator_id,
-        file_path,
+        original_filename,
     )
     try:
         orchestrator = get_operator_voice_orchestrator()
         run_async_coro(orchestrator.process_and_register_voice(operator_id, file_path))
-        logger.info("operator_id=%s Completed", operator_id)
+        logger.info("operator_id=%s Voice embedding extraction completed", operator_id)
     except Exception:
         logger.exception(
             "operator_id=%s Failed extracting voice embedding file=%s",
             operator_id,
-            file_path,
+            original_filename,
         )
         raise
     finally:

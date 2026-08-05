@@ -29,7 +29,7 @@ class ConversationOrchestrator:
     ) -> ConversationResponse:
         """Обрабатывает аудиофайл и записывает транскрипцию разговора в БД"""
         logger.info(
-            "conversation_id=%s Pipeline started file=%s",
+            "conversation_id=%s Conversation pipeline started file=%s",
             conversation_id,
             original_filename,
         )
@@ -52,7 +52,9 @@ class ConversationOrchestrator:
             )
 
             conversation, operator_id = (
-                await self._speaker_match_service.match_operators(clean_segments, path)
+                await self._speaker_match_service.match_operators(
+                    clean_segments, path, original_filename
+                )
             )
 
             result = await self._conversation_service.save_final_result(
@@ -64,7 +66,7 @@ class ConversationOrchestrator:
             )
             took_seconds = time.monotonic() - start
             logger.info(
-                "conversation_id=%s Pipeline finished, conversation saved took=%ds",
+                "conversation_id=%s Conversation pipeline finished, conversation saved took=%ds",
                 conversation_id,
                 took_seconds,
             )
@@ -73,6 +75,6 @@ class ConversationOrchestrator:
             result = await self._conversation_service.update_status(
                 conversation_id, ProcessingStatus.FAILURE, str(e)
             )
-            raise
+            raise e
 
         return ConversationResponse.model_validate(result)

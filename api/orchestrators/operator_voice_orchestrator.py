@@ -1,6 +1,10 @@
+import logging
+
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
 from api.models.enums import ProcessingStatus
+
+logger = logging.getLogger(__name__)
 
 
 class OperatorVoiceOrchestrator:
@@ -24,4 +28,4 @@ class OperatorVoiceOrchestrator:
             await self._operator_service.update_status(
                 operator_id, ProcessingStatus.FAILURE, str(e)
             )
-            raise
+            raise e
