@@ -88,33 +88,24 @@ class SpeakerMatchService:
     async def _identify_operator(
         self, segments: list[DialogueSegment], embeddings: dict, original_filename: str
     ):
-        operator = await self._identify_operator_simple(
-            segments,
-            embeddings,
-        )
+        total_duration = sum(s.end - s.start for s in segments)
+        if total_duration <= 60 or len(segments) < 12:
+            operator = await self._identify_operator_simple(segments, embeddings, original_filename)
 
-        if operator is not None:
-            logger.info("Operator found by simple strategy file=%s", original_filename)
-            return operator
+        elif total_duration <= 180 or len(segments) <= 20:
+            operator = await self._identify_operator_by_cluster(segments, embeddings, original_filename)
+            if operator is None:
+                operator = await self._identify_operator_simple(segments, embeddings, original_filename)
 
-        candidates = [s for s in segments if 2 <= s.end - s.start <= 10]
-        if len(candidates) >= self._MIN_SEGMENTS_FOR_CLUSTERING:
-            operator = await self._identify_operator_by_cluster(
-                candidates,
-                embeddings,
-            )
+        else:
+            operator = await self._identify_operator_by_cluster(segments, embeddings, original_filename)
 
-            if operator is not None:
-                logger.info(
-                    "Operator found by cluster strategy file=%s", original_filename
-                )
-                return operator
-
-        logger.warning("Failed to identify operator file=%s", original_filename)
-        return None
+        if operator is None:
+            logger.warning("Failed to identify operator file=%s", original_filename)
+        return operator
 
     async def _identify_operator_simple(
-        self, segments: list[DialogueSegment], embeddings: dict
+        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str
     ):
         candidates = [
             s
@@ -183,10 +174,11 @@ class SpeakerMatchService:
             if second_score - best_score < min_margin:
                 return None
 
+        logger.info("Operator found by simple strategy file=%s", original_filename)
         return operators[best_id]
 
     async def _identify_operator_by_cluster(
-        self, segments: list[DialogueSegment], embeddings: dict
+        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str
     ):
         candidates = [
             s
@@ -229,22 +221,16 @@ class SpeakerMatchService:
                 cluster_duration,
             )
 
-            cluster_scores.append(
-                (
-                    distance,
-                    total_duration,
-                    operator,
-                )
-            )
+            cluster_scores.append((distance, operator,))
 
         if not cluster_scores:
             return None
 
         cluster_scores.sort(key=lambda x: x[0])
 
-        best_distance, _, best_operator = cluster_scores[0]
+        best_distance, best_operator = cluster_scores[0]
         if len(cluster_scores) > 1:
-            second_distance, _, _ = cluster_scores[1]
+            second_distance, _ = cluster_scores[1]
 
             if second_distance - best_distance < self._MIN_CLUSTER_MARGIN:
                 logger.info(
@@ -257,6 +243,7 @@ class SpeakerMatchService:
         if best_distance > settings.THRESHOLD:
             return None
 
+        logger.info("Operator found by cluster strategy file=%s", original_filename)
         return best_operator
 
     def _cluster_embeddings(self, candidates: list, embeddings: dict):
