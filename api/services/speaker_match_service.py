@@ -8,7 +8,9 @@ from sklearn.cluster import AgglomerativeClustering
 from api.core.config import settings
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
+from api.services.metrics_service import MetricsCSVService
 from api.schemas.transcription import DialogueSegment
+from api.schemas.metrics import FileMetric
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,7 @@ class SpeakerMatchService:
     ) -> None:
         self._operator_service = operator_service
         self._embedding_service = embedding_service
+        self._metrics_service = MetricsCSVService()
 
     async def match_operators(
         self, segments: list[DialogueSegment], path: str, original_filename: str
@@ -46,15 +49,21 @@ class SpeakerMatchService:
             except Exception:
                 logger.exception("Failed to extract embedding for segment")
                 embeddings[key] = None
-
+        
+        total_duration = sum(s.end - s.start for s in segments)
+        metric = FileMetric(filename=original_filename, duration=total_duration)
         best_operator = await self._identify_operator(
-            segments, embeddings, original_filename
+            segments, embeddings, original_filename, metric
         )
         if not best_operator:
+            if settings.DEBUG_METRICS:
+                self._metrics_service.append(metric)
             return segments, None
 
         target_operator_vector = best_operator.embedding
         if not target_operator_vector:
+            if settings.DEBUG_METRICS:
+                self._metrics_service.append(metric)
             return segments, None
 
         matched_segments = []
@@ -83,29 +92,35 @@ class SpeakerMatchService:
             upd_segment = segment.model_copy(update={"speaker": resolved_role})
             matched_segments.append(upd_segment)
 
+        if settings.DEBUG_METRICS:
+            self._metrics_service.append(metric)
         return matched_segments, best_operator.id
 
     async def _identify_operator(
-        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str
+        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str, metric: FileMetric
     ):
         total_duration = sum(s.end - s.start for s in segments)
         if total_duration <= 60 or len(segments) < 12:
-            operator = await self._identify_operator_simple(segments, embeddings, original_filename)
+            metric.method = "simple"
+            operator = await self._identify_operator_simple(segments, embeddings, original_filename, metric)
 
         elif total_duration <= 180 or len(segments) <= 20:
-            operator = await self._identify_operator_by_cluster(segments, embeddings, original_filename)
+            metric.method = "cluster"
+            operator = await self._identify_operator_by_cluster(segments, embeddings, original_filename, metric)
             if operator is None:
-                operator = await self._identify_operator_simple(segments, embeddings, original_filename)
+                metric.method = "simple"
+                operator = await self._identify_operator_simple(segments, embeddings, original_filename, metric)
 
         else:
-            operator = await self._identify_operator_by_cluster(segments, embeddings, original_filename)
+            metric.method = "cluster"
+            operator = await self._identify_operator_by_cluster(segments, embeddings, original_filename, metric)
 
         if operator is None:
             logger.warning("Failed to identify operator file=%s", original_filename)
         return operator
 
     async def _identify_operator_simple(
-        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str
+        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str, metric: FileMetric
     ):
         candidates = [
             s
@@ -114,6 +129,7 @@ class SpeakerMatchService:
             <= s.end - s.start
             <= self._MAX_SEGMENT_DURATION
         ]
+        metric.num_segments = len(candidates)
         if len(candidates) <= self._MAX_CANDIDATES:
             chunks_to_analyze = candidates
         else:
@@ -162,23 +178,30 @@ class SpeakerMatchService:
             )
 
         if not scores:
+            metric.error = "no_scores"
             return None
 
         scores.sort()
         best_score, best_id = scores[0]
+        metric.best_score = best_score
+        metric.best_operator = operators[best_id].name
         if best_score > settings.THRESHOLD:
+            metric.error = "best_score > threshold"
             return None
 
         if len(scores) > 1:
             second_score, _ = scores[1]
+            metric.second_score = second_score
+            metric.margin = second_score - best_score
             if second_score - best_score < min_margin:
+                metric.error = "margin < min_margin"
                 return None
 
         logger.info("Operator found by simple strategy file=%s", original_filename)
         return operators[best_id]
 
     async def _identify_operator_by_cluster(
-        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str
+        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str, metric: FileMetric
     ):
         candidates = [
             s
@@ -187,12 +210,14 @@ class SpeakerMatchService:
             <= s.end - s.start
             <= self._MAX_SEGMENT_DURATION
         ]
+        metric.num_segments = len(candidates)
         clusters = self._cluster_embeddings(
             candidates,
             embeddings,
         )
 
         if clusters is None:
+            metric.error = "no clusters"
             return None
 
         cluster_scores = []
@@ -224,15 +249,21 @@ class SpeakerMatchService:
             cluster_scores.append((distance, operator,))
 
         if not cluster_scores:
+            metric.error = "no cluster scores"
             return None
 
         cluster_scores.sort(key=lambda x: x[0])
 
         best_distance, best_operator = cluster_scores[0]
+        metric.best_score = best_distance
+        metric.best_operator = best_operator.name
         if len(cluster_scores) > 1:
             second_distance, _ = cluster_scores[1]
+            metric.second_score = second_distance
+            metric.margin = second_distance - best_distance
 
             if second_distance - best_distance < self._MIN_CLUSTER_MARGIN:
+                metric.error = "margin < min_margin"
                 logger.info(
                     "Clusters are too close: %.3f vs %.3f",
                     best_distance,
@@ -241,6 +272,7 @@ class SpeakerMatchService:
                 return None
 
         if best_distance > settings.THRESHOLD:
+            metric.error = "best_score < threshold"
             return None
 
         logger.info("Operator found by cluster strategy file=%s", original_filename)

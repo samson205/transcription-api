@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     THRESHOLD: float = 0.4
     UNCERTAIN_BOUND: float = 0.47
 
+    DEBUG_METRICS: bool = False
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
