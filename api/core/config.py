@@ -21,8 +21,8 @@ class Settings(BaseSettings):
     EXTENSIONS: set[str] = {".mp3", ".wav", ".ogg"}
     MAX_UPLOAD_SIZE_BYTES: int = 100 * 1024 * 1024
 
-    THRESHOLD: float = 0.4
-    UNCERTAIN_BOUND: float = 0.47
+    THRESHOLD: float = 0.38
+    UNCERTAIN_BOUND: float = 0.45
 
     DEBUG_METRICS: bool = False
 
