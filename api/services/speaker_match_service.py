@@ -49,7 +49,7 @@ class SpeakerMatchService:
             except Exception:
                 logger.exception("Failed to extract embedding for segment")
                 embeddings[key] = None
-        
+
         total_duration = sum(s.end - s.start for s in segments)
         metric = FileMetric(filename=original_filename, duration=total_duration)
         best_operator = await self._identify_operator(
@@ -97,30 +97,46 @@ class SpeakerMatchService:
         return matched_segments, best_operator.id
 
     async def _identify_operator(
-        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str, metric: FileMetric
+        self,
+        segments: list[DialogueSegment],
+        embeddings: dict,
+        original_filename: str,
+        metric: FileMetric,
     ):
         total_duration = sum(s.end - s.start for s in segments)
         if total_duration <= 60 or len(segments) < 12:
             metric.method = "simple"
-            operator = await self._identify_operator_simple(segments, embeddings, original_filename, metric)
+            operator = await self._identify_operator_simple(
+                segments, embeddings, original_filename, metric
+            )
 
         elif total_duration <= 180 or len(segments) <= 20:
             metric.method = "cluster"
-            operator = await self._identify_operator_by_cluster(segments, embeddings, original_filename, metric)
+            operator = await self._identify_operator_by_cluster(
+                segments, embeddings, original_filename, metric
+            )
             if operator is None:
                 metric.method = "simple"
-                operator = await self._identify_operator_simple(segments, embeddings, original_filename, metric)
+                operator = await self._identify_operator_simple(
+                    segments, embeddings, original_filename, metric
+                )
 
         else:
             metric.method = "cluster"
-            operator = await self._identify_operator_by_cluster(segments, embeddings, original_filename, metric)
+            operator = await self._identify_operator_by_cluster(
+                segments, embeddings, original_filename, metric
+            )
 
         if operator is None:
             logger.warning("Failed to identify operator file=%s", original_filename)
         return operator
 
     async def _identify_operator_simple(
-        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str, metric: FileMetric
+        self,
+        segments: list[DialogueSegment],
+        embeddings: dict,
+        original_filename: str,
+        metric: FileMetric,
     ):
         candidates = [
             s
@@ -201,7 +217,11 @@ class SpeakerMatchService:
         return operators[best_id]
 
     async def _identify_operator_by_cluster(
-        self, segments: list[DialogueSegment], embeddings: dict, original_filename: str, metric: FileMetric
+        self,
+        segments: list[DialogueSegment],
+        embeddings: dict,
+        original_filename: str,
+        metric: FileMetric,
     ):
         candidates = [
             s
@@ -246,7 +266,12 @@ class SpeakerMatchService:
                 cluster_duration,
             )
 
-            cluster_scores.append((distance, operator,))
+            cluster_scores.append(
+                (
+                    distance,
+                    operator,
+                )
+            )
 
         if not cluster_scores:
             metric.error = "no cluster scores"
