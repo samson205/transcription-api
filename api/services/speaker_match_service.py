@@ -24,8 +24,6 @@ class SpeakerMatchService:
     _MIN_CLUSTER_SHARE = 0.15
     _MIN_CLUSTER_MARGIN = 0.04
 
-    _MIN_SEGMENTS_FOR_CLUSTERING = 12
-
     def __init__(
         self, operator_service: OperatorService, embedding_service: EmbeddingService
     ) -> None:
@@ -138,13 +136,7 @@ class SpeakerMatchService:
         original_filename: str,
         metric: FileMetric,
     ):
-        candidates = [
-            s
-            for s in segments
-            if self._MIN_SEGMENT_DURATION
-            <= s.end - s.start
-            <= self._MAX_SEGMENT_DURATION
-        ]
+        candidates = self._get_valid_candidates(segments, embeddings)
         metric.num_segments = len(candidates)
         if len(candidates) <= self._MAX_CANDIDATES:
             chunks_to_analyze = candidates
@@ -181,7 +173,6 @@ class SpeakerMatchService:
 
         scores = []
         for op_id, dists in operator_distances.items():
-            # score = np.percentile(dists, 25)
             sorted_dists = sorted(dists)
             top_dists = sorted_dists[: min(2, len(sorted_dists))]
             score = np.mean(top_dists)
@@ -223,13 +214,7 @@ class SpeakerMatchService:
         original_filename: str,
         metric: FileMetric,
     ):
-        candidates = [
-            s
-            for s in segments
-            if self._MIN_SEGMENT_DURATION
-            <= s.end - s.start
-            <= self._MAX_SEGMENT_DURATION
-        ]
+        candidates = self._get_valid_candidates(segments, embeddings)
         metric.num_segments = len(candidates)
         clusters = self._cluster_embeddings(
             candidates,
@@ -304,11 +289,10 @@ class SpeakerMatchService:
         return best_operator
 
     def _cluster_embeddings(self, candidates: list, embeddings: dict):
-        valid_candidates = [
-            s for s in candidates if embeddings[(s.start, s.end)] is not None
-        ]
+        if len(candidates) < 2:
+            return None
 
-        x = np.stack([embeddings[(s.start, s.end)] for s in valid_candidates])
+        x = np.stack([embeddings[(s.start, s.end)] for s in candidates])
 
         clusterer = AgglomerativeClustering(
             n_clusters=2, metric="cosine", linkage="average"
@@ -317,7 +301,7 @@ class SpeakerMatchService:
         labels = clusterer.fit_predict(x)
 
         clusters = {}
-        for segment, label in zip(valid_candidates, labels):
+        for segment, label in zip(candidates, labels):
             clusters.setdefault(int(label), []).append(segment)
         return clusters
 
@@ -327,3 +311,15 @@ class SpeakerMatchService:
         centroid = np.mean(vectors, axis=0)
         centroid /= np.linalg.norm(centroid)
         return centroid.tolist()
+
+    def _get_valid_candidates(
+        self, segments: list[DialogueSegment], embeddings: dict
+    ) -> list[DialogueSegment]:
+        candidates = [
+            s
+            for s in segments
+            if self._MIN_SEGMENT_DURATION
+            <= s.end - s.start
+            <= self._MAX_SEGMENT_DURATION
+        ]
+        return [s for s in candidates if embeddings[(s.start, s.end)] is not None]
