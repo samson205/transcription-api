@@ -50,7 +50,7 @@ class SpeakerMatchService:
 
         total_duration = sum(s.end - s.start for s in segments)
         metric = FileMetric(filename=original_filename, duration=total_duration)
-        best_operator = await self._identify_operator(
+        best_operator, cluster_map = await self._identify_operator(
             segments, embeddings, original_filename, metric
         )
         if not best_operator:
@@ -65,27 +65,30 @@ class SpeakerMatchService:
             return segments, None
 
         matched_segments = []
+        cluster_map = cluster_map or {}
         for segment in segments:
             duration = segment.end - segment.start
+            key = (segment.start, segment.end)
             resolved_role = None
             if duration < 0.3:
                 resolved_role = "Неизвестный"
+            elif key in cluster_map:
+                role = cluster_map[key]
+                resolved_role = (
+                    f"Оператор ({best_operator.name})" if role == "operator" else "Клиент"
+                )
             else:
-                key = (segment.start, segment.end)
                 segment_emb = embeddings[key]
                 if segment_emb is None:
                     resolved_role = "Неизвестный"
-                    upd_segment = segment.model_copy(update={"speaker": resolved_role})
-                    matched_segments.append(upd_segment)
-                    continue
-
-                dist_to_operator = cosine(segment_emb, target_operator_vector)
-                if dist_to_operator <= settings.THRESHOLD:
-                    resolved_role = f"Оператор ({best_operator.name})"
-                elif dist_to_operator <= settings.UNCERTAIN_BOUND:
-                    resolved_role = f"Оператор ({best_operator.name}) [Неуверенно]"
                 else:
-                    resolved_role = "Клиент"
+                    dist_to_operator = cosine(segment_emb, target_operator_vector)
+                    if dist_to_operator <= settings.THRESHOLD:
+                        resolved_role = f"Оператор ({best_operator.name})"
+                    elif dist_to_operator <= settings.UNCERTAIN_BOUND:
+                        resolved_role = f"Оператор ({best_operator.name}) [Неуверенно]"
+                    else:
+                        resolved_role = "Клиент"
 
             upd_segment = segment.model_copy(update={"speaker": resolved_role})
             matched_segments.append(upd_segment)
@@ -102,6 +105,7 @@ class SpeakerMatchService:
         metric: FileMetric,
     ):
         total_duration = sum(s.end - s.start for s in segments)
+        cluster_map = None
         if total_duration <= 60 or len(segments) < 12:
             metric.method = "simple"
             operator = await self._identify_operator_simple(
@@ -110,24 +114,25 @@ class SpeakerMatchService:
 
         elif total_duration <= 180 or len(segments) <= 20:
             metric.method = "cluster"
-            operator = await self._identify_operator_by_cluster(
+            operator, cluster_map = await self._identify_operator_by_cluster(
                 segments, embeddings, original_filename, metric
             )
             if operator is None:
                 metric.method = "simple"
+                cluster_map = None
                 operator = await self._identify_operator_simple(
                     segments, embeddings, original_filename, metric
                 )
 
         else:
             metric.method = "cluster"
-            operator = await self._identify_operator_by_cluster(
+            operator, cluster_map = await self._identify_operator_by_cluster(
                 segments, embeddings, original_filename, metric
             )
 
         if operator is None:
             logger.warning("Failed to identify operator file=%s", original_filename)
-        return operator
+        return operator, cluster_map
 
     async def _identify_operator_simple(
         self,
@@ -223,7 +228,7 @@ class SpeakerMatchService:
 
         if clusters is None:
             metric.error = "no clusters"
-            return None
+            return None, None
 
         cluster_scores = []
         total_duration = sum(s.end - s.start for s in segments)
@@ -251,24 +256,19 @@ class SpeakerMatchService:
                 cluster_duration,
             )
 
-            cluster_scores.append(
-                (
-                    distance,
-                    operator,
-                )
-            )
+            cluster_scores.append((distance, operator, cluster_id))
 
         if not cluster_scores:
             metric.error = "no cluster scores"
-            return None
+            return None, None
 
         cluster_scores.sort(key=lambda x: x[0])
 
-        best_distance, best_operator = cluster_scores[0]
+        best_distance, best_operator, best_cluster_id = cluster_scores[0]
         metric.best_score = best_distance
         metric.best_operator = best_operator.name
         if len(cluster_scores) > 1:
-            second_distance, _ = cluster_scores[1]
+            second_distance, _, _ = cluster_scores[1]
             metric.second_score = second_distance
             metric.margin = second_distance - best_distance
 
@@ -279,14 +279,21 @@ class SpeakerMatchService:
                     best_distance,
                     second_distance,
                 )
-                return None
+                return None, None
 
         if best_distance > settings.THRESHOLD:
             metric.error = "best_score < threshold"
-            return None
+            return None, None
 
         logger.info("Operator found by cluster strategy file=%s", original_filename)
-        return best_operator
+
+        cluster_map: dict[tuple[float, float], str] = {}
+        for cluster_id, cluster_segments in clusters.items():
+            role = "operator" if cluster_id == best_cluster_id else "client"
+            for s in cluster_segments:
+                cluster_map[(s.start, s.end)] = role
+
+        return best_operator, cluster_map
 
     def _cluster_embeddings(self, candidates: list, embeddings: dict):
         if len(candidates) < 2:
