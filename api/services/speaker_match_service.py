@@ -29,10 +29,13 @@ class SpeakerMatchService:
     ) -> None:
         self._operator_service = operator_service
         self._embedding_service = embedding_service
-        self._metrics_service = MetricsCSVService()
 
     async def match_operators(
-        self, segments: list[DialogueSegment], path: str, original_filename: str
+        self,
+        segments: list[DialogueSegment],
+        path: str,
+        original_filename: str,
+        metric: FileMetric,
     ) -> tuple[list[DialogueSegment], int | None]:
         audio_in_memory = self._embedding_service.load_audio(path)
 
@@ -48,20 +51,14 @@ class SpeakerMatchService:
                 logger.exception("Failed to extract embedding for segment")
                 embeddings[key] = None
 
-        total_duration = sum(s.end - s.start for s in segments)
-        metric = FileMetric(filename=original_filename, duration=total_duration)
         best_operator, cluster_map = await self._identify_operator(
             segments, embeddings, original_filename, metric
         )
         if not best_operator:
-            if settings.DEBUG_METRICS:
-                self._metrics_service.append(metric)
             return segments, None
 
         target_operator_vector = best_operator.embedding
         if not target_operator_vector:
-            if settings.DEBUG_METRICS:
-                self._metrics_service.append(metric)
             return segments, None
 
         matched_segments = []
@@ -75,7 +72,9 @@ class SpeakerMatchService:
             elif key in cluster_map:
                 role = cluster_map[key]
                 resolved_role = (
-                    f"Оператор ({best_operator.name})" if role == "operator" else "Клиент"
+                    f"Оператор ({best_operator.name})"
+                    if role == "operator"
+                    else "Клиент"
                 )
             else:
                 segment_emb = embeddings[key]
@@ -93,8 +92,6 @@ class SpeakerMatchService:
             upd_segment = segment.model_copy(update={"speaker": resolved_role})
             matched_segments.append(upd_segment)
 
-        if settings.DEBUG_METRICS:
-            self._metrics_service.append(metric)
         return matched_segments, best_operator.id
 
     async def _identify_operator(

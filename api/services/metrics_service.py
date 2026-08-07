@@ -16,7 +16,11 @@ class MetricsCSVService:
                 writer.writerow(
                     [
                         "filename",
-                        "duration",
+                        "device",
+                        "compute_type",
+                        "whisper_model",
+                        "processing_time",
+                        "file_duration",
                         "num_segments",
                         "method",
                         "best_operator",
@@ -34,7 +38,11 @@ class MetricsCSVService:
             writer.writerow(
                 [
                     data.filename,
-                    data.duration,
+                    data.device,
+                    data.compute_type,
+                    data.whisper_model,
+                    data.processing_time,
+                    data.file_duration,
                     data.num_segments,
                     data.method if data.method else "",
                     data.best_operator if data.best_operator else "",

@@ -3,7 +3,11 @@ from pydantic import BaseModel
 
 class FileMetric(BaseModel):
     filename: str
-    duration: float
+    device: str
+    compute_type: str
+    whisper_model: str
+    processing_time: float | None = None
+    file_duration: float | None = None
     num_segments: int | None = None
     method: str | None = None
     best_operator: str | None = None
