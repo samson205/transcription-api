@@ -116,6 +116,9 @@ class SpeakerMatchService:
             )
             if operator is None:
                 metric.method = "simple"
+                metric.error = None
+                metric.second_score = None
+                metric.margin = None
                 cluster_map = None
                 operator = await self._identify_operator_simple(
                     segments, embeddings, original_filename, metric
@@ -279,7 +282,7 @@ class SpeakerMatchService:
                 return None, None
 
         if best_distance > settings.THRESHOLD:
-            metric.error = "best_score < threshold"
+            metric.error = "best_score > threshold"
             return None, None
 
         logger.info("Operator found by cluster strategy file=%s", original_filename)
