@@ -70,7 +70,7 @@ class SegmentMetricsService(MetricsService):
                         round(row.duration, 2),
                         row.text,
                         row.speaker,
-                        round(row.distance) if row.distance is not None else "",
+                        round(row.distance, 4) if row.distance is not None else "",
                         row.source,
                         row.method,
                         row.best_operator or ""
