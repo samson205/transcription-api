@@ -13,19 +13,26 @@ class MetricsService:
         if not self.path.exists():
             with open(self.path, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f, delimiter=";")
-                writer.writerow(
-                    header_rows
-                )
+                writer.writerow(header_rows)
 
 
 class FileMetricsService(MetricsService):
     def append(self, data: FileMetric) -> None:
         self._init_file(
             [
-                "filename", "device", "compute_type",
-                "whisper_model", "processing_time", "file_duration",
-                "num_segments", "method", "best_operator",
-                "best_score", "second_score", "margin", "error",
+                "filename",
+                "device",
+                "compute_type",
+                "whisper_model",
+                "processing_time",
+                "file_duration",
+                "num_segments",
+                "method",
+                "best_operator",
+                "best_score",
+                "second_score",
+                "margin",
+                "error",
             ]
         )
         with open(self.path, "a", newline="", encoding="utf-8") as f:
@@ -53,9 +60,15 @@ class SegmentMetricsService(MetricsService):
     def append(self, data: list[SegmentMetric]) -> None:
         self._init_file(
             [
-                "filename", "start", "end",
-                "duration", "text", "speaker",
-                "distance", "source", "method",
+                "filename",
+                "start",
+                "end",
+                "duration",
+                "text",
+                "speaker",
+                "distance",
+                "source",
+                "method",
                 "best_operator",
             ]
         )
@@ -73,7 +86,6 @@ class SegmentMetricsService(MetricsService):
                         round(row.distance, 4) if row.distance is not None else "",
                         row.source,
                         row.method,
-                        row.best_operator or ""
+                        row.best_operator or "",
                     ]
                 )
-                

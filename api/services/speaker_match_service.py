@@ -101,6 +101,7 @@ class SpeakerMatchService:
             segment_metrics.append(
                 SegmentMetric(
                     filename=original_filename,
+                    config=f"{settings.DEVICE}_{settings.COMPUTE_TYPE}_beam{settings.BEAM_SIZE}_wt{settings.WORD_TIMESTAMPS}",
                     start=segment.start,
                     end=segment.end,
                     duration=duration,

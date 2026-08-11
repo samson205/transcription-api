@@ -43,6 +43,7 @@ class ConversationOrchestrator:
                 filename=original_filename,
                 device=settings.DEVICE,
                 compute_type=settings.COMPUTE_TYPE,
+                beam_size=settings.BEAM_SIZE,
                 whisper_model=settings.MODEL_NAME,
             )
             start = time.monotonic()
