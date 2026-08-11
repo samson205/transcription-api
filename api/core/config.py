@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     MODEL_NAME: str = "large-v3"
     DEVICE: str = "cuda"
     COMPUTE_TYPE: str = "int8_float16"
+    BEAM_SIZE: int = 3
     LOCAL_FILES_ONLY: bool = False
     WORD_TIMESTAMPS: bool = False
 
