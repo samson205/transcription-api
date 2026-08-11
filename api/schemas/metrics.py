@@ -5,6 +5,7 @@ class FileMetric(BaseModel):
     filename: str
     device: str
     compute_type: str
+    beam_size: int
     whisper_model: str
     processing_time: float | None = None
     file_duration: float | None = None
@@ -15,3 +16,17 @@ class FileMetric(BaseModel):
     second_score: float | None = None
     margin: float | None = None
     error: str | None = None
+
+
+class SegmentMetric(BaseModel):
+    filename: str
+    config: str
+    start: float
+    end: float
+    duration: float
+    text: str
+    speaker: str
+    distance: float | None = None
+    source: str  # откуда взялось решение
+    method: str
+    best_operator: str | None = None

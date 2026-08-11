@@ -8,9 +8,9 @@ from sklearn.cluster import AgglomerativeClustering
 from api.core.config import settings
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
-from api.services.metrics_service import MetricsCSVService
+from api.services.metrics_service import SegmentMetricsService
 from api.schemas.transcription import DialogueSegment
-from api.schemas.metrics import FileMetric
+from api.schemas.metrics import FileMetric, SegmentMetric
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,7 @@ class SpeakerMatchService:
     ) -> None:
         self._operator_service = operator_service
         self._embedding_service = embedding_service
+        self._metrics_service = SegmentMetricsService("export/segment_metrics.csv")
 
     async def match_operators(
         self,
@@ -38,7 +39,7 @@ class SpeakerMatchService:
         metric: FileMetric,
     ) -> tuple[list[DialogueSegment], int | None]:
         audio_in_memory = self._embedding_service.load_audio(path)
-
+        segment_metrics: list[SegmentMetric] = []
         embeddings = {}
         for segment in segments:
             excerpt = Segment(segment.start, segment.end)
@@ -66,7 +67,10 @@ class SpeakerMatchService:
         for segment in segments:
             duration = segment.end - segment.start
             key = (segment.start, segment.end)
+            distance = None
             resolved_role = None
+            source = "skipped"
+
             if duration < 0.3:
                 resolved_role = "Неизвестный"
             elif key in cluster_map:
@@ -76,21 +80,45 @@ class SpeakerMatchService:
                     if role == "operator"
                     else "Клиент"
                 )
+                source = "cluster"
+                segment_emb = embeddings.get(key)
+                if segment_emb is not None:
+                    distance = cosine(segment_emb, target_operator_vector)
             else:
                 segment_emb = embeddings[key]
                 if segment_emb is None:
                     resolved_role = "Неизвестный"
                 else:
-                    dist_to_operator = cosine(segment_emb, target_operator_vector)
-                    if dist_to_operator <= settings.THRESHOLD:
+                    distance = cosine(segment_emb, target_operator_vector)
+                    source = "cosine"
+                    if distance <= settings.THRESHOLD:
                         resolved_role = f"Оператор ({best_operator.name})"
-                    elif dist_to_operator <= settings.UNCERTAIN_BOUND:
+                    elif distance <= settings.UNCERTAIN_BOUND:
                         resolved_role = f"Оператор ({best_operator.name}) [Неуверенно]"
                     else:
                         resolved_role = "Клиент"
 
+            segment_metrics.append(
+                SegmentMetric(
+                    filename=original_filename,
+                    config=f"{settings.DEVICE}_{settings.COMPUTE_TYPE}_beam{settings.BEAM_SIZE}_wt{settings.WORD_TIMESTAMPS}",
+                    start=segment.start,
+                    end=segment.end,
+                    duration=duration,
+                    text=segment.text,
+                    speaker=resolved_role,
+                    distance=distance,
+                    source=source,
+                    method=metric.method or "",
+                    best_operator=best_operator.name,
+                )
+            )
+
             upd_segment = segment.model_copy(update={"speaker": resolved_role})
             matched_segments.append(upd_segment)
+
+        if settings.DEBUG_METRICS:
+            self._metrics_service.append(segment_metrics)
 
         return matched_segments, best_operator.id
 
