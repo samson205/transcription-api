@@ -23,6 +23,7 @@ class FileMetricsService(MetricsService):
                 "filename",
                 "device",
                 "compute_type",
+                "beam_size",
                 "whisper_model",
                 "processing_time",
                 "file_duration",
@@ -42,6 +43,7 @@ class FileMetricsService(MetricsService):
                     data.filename,
                     data.device,
                     data.compute_type,
+                    data.beam_size,
                     data.whisper_model,
                     data.processing_time,
                     data.file_duration,
@@ -61,6 +63,7 @@ class SegmentMetricsService(MetricsService):
         self._init_file(
             [
                 "filename",
+                "config",
                 "start",
                 "end",
                 "duration",
@@ -78,6 +81,7 @@ class SegmentMetricsService(MetricsService):
                 writer.writerow(
                     [
                         row.filename,
+                        row.config,
                         round(row.start, 2),
                         round(row.end, 2),
                         round(row.duration, 2),
