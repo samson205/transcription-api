@@ -5,7 +5,7 @@ from api.core.config import settings
 from api.services.transcription_service import TranscriptionService
 from api.services.speaker_match_service import SpeakerMatchService
 from api.services.conversation_service import ConversationService
-from api.services.metrics_service import MetricsCSVService
+from api.services.metrics_service import FileMetricsService
 from api.processors.segment_aggregator import SegmentAggregator
 from api.schemas.transcription import ConversationResponse
 from api.schemas.metrics import FileMetric
@@ -26,7 +26,7 @@ class ConversationOrchestrator:
         self._speaker_match_service = speaker_match_service
         self._segment_aggregator = segment_aggregator
         self._conversation_service = conversation_service
-        self._metrics_service = MetricsCSVService()
+        self._metrics_service = FileMetricsService("export/file_metrics.csv")
 
     async def process_and_get_conversation(
         self, conversation_id: int, original_filename: str, path: str
