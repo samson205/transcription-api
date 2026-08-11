@@ -38,7 +38,7 @@ class WhisperEngine:
         model = self._load_model()
         return model.transcribe(
             path,
-            beam_size=7,
+            beam_size=settings.BEAM_SIZE,
             vad_filter=True,
             condition_on_previous_text=True,
             word_timestamps=self._word_timestamps,

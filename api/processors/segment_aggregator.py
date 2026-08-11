@@ -12,6 +12,9 @@ class SegmentAggregator:
     ) -> list[DialogueSegment]:
         result = []
         current = None
+        prev_end = None
+        max_pause = 0.7
+        max_duration = 15.0
 
         for segment in segments:
             text_chunk = getattr(segment, "text", getattr(segment, "word", "")).strip()
@@ -19,10 +22,14 @@ class SegmentAggregator:
                 continue
 
             if current is not None and settings.WORD_TIMESTAMPS:
-                is_capital = text_chunk[0].isupper()
-                if is_capital:
-                    current = self._finalize_segment(current)
-                    result.append(current)
+                gap = (segment.start - prev_end) if prev_end is not None else 0.0
+                if gap >= max_pause:
+                    result.append(self._finalize_segment(current))
+                    current = None
+
+            if current is not None and settings.WORD_TIMESTAMPS:
+                if segment.end - current.start > max_duration:
+                    result.append(self._finalize_segment(current))
                     current = None
 
             if current is None:
@@ -40,9 +47,10 @@ class SegmentAggregator:
                 result.append(current)
                 current = None
 
+            prev_end = segment.end
+
         if current:
-            current = self._finalize_segment(current)
-            result.append(current)
+            result.append(self._finalize_segment(current))
 
         return result
 
