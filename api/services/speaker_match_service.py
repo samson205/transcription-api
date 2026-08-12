@@ -74,20 +74,28 @@ class SpeakerMatchService:
             if duration < 0.3:
                 resolved_role = "Неизвестный"
             elif key in cluster_map:
-                role = cluster_map[key]
-                resolved_role = (
-                    f"Оператор ({best_operator.name})"
-                    if role == "operator"
-                    else "Клиент"
-                )
-                source = "cluster"
                 segment_emb = embeddings.get(key)
-                if segment_emb is not None:
+                if segment_emb is None:
+                    resolved_role = "Неизвестный"
+                    source = "skipped"
+                else:
                     distance = cosine(segment_emb, target_operator_vector)
+                    role = cluster_map[key]
+                    if distance <= settings.UNCERTAIN_BOUND:
+                        resolved_role = (
+                            f"Оператор ({best_operator.name})"
+                            if role == "operator"
+                            else "Клиент"
+                        )
+                        source = "cluster"
+                    else:
+                        resolved_role = "Клиент"
+                        source = "cluster_overriden"
             else:
                 segment_emb = embeddings[key]
                 if segment_emb is None:
                     resolved_role = "Неизвестный"
+                    source = "skipped"
                 else:
                     distance = cosine(segment_emb, target_operator_vector)
                     source = "cosine"
