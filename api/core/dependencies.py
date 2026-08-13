@@ -2,11 +2,13 @@ from api.core.database import database_session
 from api.core.config import settings
 from api.engines.whisper_engine import WhisperEngine
 from api.engines.embedding_engine import EmbeddingEngine
+from api.engines.vad_engine import VadEngine
 from api.services.transcription_service import TranscriptionService
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
 from api.services.speaker_match_service import SpeakerMatchService
 from api.services.conversation_service import ConversationService
+from api.services.vad_service import VadService
 from api.processors.segment_aggregator import SegmentAggregator
 from api.repositories.operator_repository import OperatorRepository
 from api.repositories.conversation_repository import ConversationRepository
@@ -49,8 +51,16 @@ def get_operator_service() -> OperatorService:
     return OperatorService(get_operator_repository())
 
 
+def get_vad_engine() -> VadEngine:
+    return VadEngine()
+
+
+def get_vad_service() -> VadService:
+    return VadService(get_vad_engine())
+
+
 def get_speaker_match_service() -> SpeakerMatchService:
-    return SpeakerMatchService(get_operator_service(), get_embedding_service())
+    return SpeakerMatchService(get_operator_service(), get_embedding_service(), get_vad_service())
 
 
 def get_segment_aggregator() -> SegmentAggregator:
