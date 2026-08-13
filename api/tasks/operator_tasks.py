@@ -19,7 +19,7 @@ def extract_operator_embedding_task(
     )
     try:
         orchestrator = get_operator_voice_orchestrator()
-        run_async_coro(orchestrator.process_and_register_voice(operator_id, file_path))
+        run_async_coro(orchestrator.process_and_register_voice(operator_id, file_path, original_filename))
         logger.info("operator_id=%s Voice embedding extraction completed", operator_id)
     except Exception:
         logger.exception(
