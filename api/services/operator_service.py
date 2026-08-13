@@ -13,6 +13,7 @@ class OperatorService:
         return await self._repo.create(data.name)
 
     async def get_all(self) -> list[Operator]:
+        """Получает всех операторов"""
         return await self._repo.get_all()
 
     async def get_by_id(self, operator_id: int) -> Operator:
@@ -22,9 +23,9 @@ class OperatorService:
             raise ValueError("Operator not found")
         return result
 
-    async def update_embedding(self, operator_id: int, embedding: list[float]) -> None:
-        """Обновляет эмбеддинг оператора в БД"""
-        result = await self._repo.update_embedding(operator_id, embedding)
+    async def add_embedding(self, operator_id: int, embedding: list[float], source_filename: str | None) -> None:
+        """Добавляет еще один эталонный эмбеддинг оператору (не перезаписывает старые)"""
+        result = await self._repo.add_embedding(operator_id, embedding, source_filename)
         if not result:
             raise ValueError("Operator not found")
         return None

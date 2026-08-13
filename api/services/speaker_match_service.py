@@ -58,8 +58,8 @@ class SpeakerMatchService:
         if not best_operator:
             return segments, None
 
-        target_operator_vector = best_operator.embedding
-        if not target_operator_vector:
+        operator_embeddings = [oe.embedding for oe in best_operator.embeddings]
+        if not operator_embeddings:
             return segments, None
 
         matched_segments = []
@@ -79,7 +79,7 @@ class SpeakerMatchService:
                     resolved_role = "Неизвестный"
                     source = "skipped"
                 else:
-                    distance = cosine(segment_emb, target_operator_vector)
+                    distance = self._distance_to_operator(segment_emb, operator_embeddings)
                     role = cluster_map[key]
                     if distance <= settings.UNCERTAIN_BOUND:
                         resolved_role = (
@@ -97,7 +97,7 @@ class SpeakerMatchService:
                     resolved_role = "Неизвестный"
                     source = "skipped"
                 else:
-                    distance = cosine(segment_emb, target_operator_vector)
+                    distance = self._distance_to_operator(segment_emb, operator_embeddings)
                     source = "cosine"
                     if distance <= settings.THRESHOLD:
                         resolved_role = f"Оператор ({best_operator.name})"
@@ -366,3 +366,6 @@ class SpeakerMatchService:
             <= self._MAX_SEGMENT_DURATION
         ]
         return [s for s in candidates if embeddings[(s.start, s.end)] is not None]
+
+    def _distance_to_operator(self, segment_emb: list[float], operator_embeddings: list[list[float]]) -> float:
+        return min(cosine(segment_emb, ref) for ref in operator_embeddings)
