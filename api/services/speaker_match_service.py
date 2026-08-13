@@ -9,6 +9,7 @@ from api.core.config import settings
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
 from api.services.metrics_service import SegmentMetricsService
+from api.services.vad_service import VadService
 from api.schemas.transcription import DialogueSegment
 from api.schemas.metrics import FileMetric, SegmentMetric
 
@@ -25,10 +26,11 @@ class SpeakerMatchService:
     _MIN_CLUSTER_MARGIN = 0.04
 
     def __init__(
-        self, operator_service: OperatorService, embedding_service: EmbeddingService
+        self, operator_service: OperatorService, embedding_service: EmbeddingService, vad_service: VadService
     ) -> None:
         self._operator_service = operator_service
         self._embedding_service = embedding_service
+        self._vad_service = vad_service
         self._metrics_service = SegmentMetricsService("export/segment_metrics.csv")
 
     async def match_operators(
@@ -40,9 +42,16 @@ class SpeakerMatchService:
     ) -> tuple[list[DialogueSegment], int | None]:
         audio_in_memory = self._embedding_service.load_audio(path)
         segment_metrics: list[SegmentMetric] = []
+        speech_regions = self._vad_service.get_speech_regions(audio_in_memory)
         embeddings = {}
         for segment in segments:
-            excerpt = Segment(segment.start, segment.end)
+            clipped = self._vad_service.clip_to_speech(segment.start, segment.end, speech_regions)
+            key = (segment.start, segment.end)
+            if clipped is None:
+                embeddings[key] = None
+                continue
+
+            excerpt = Segment(*clipped)
             key = (segment.start, segment.end)
             try:
                 embeddings[key] = self._embedding_service.extract_embedding(
@@ -214,6 +223,8 @@ class SpeakerMatchService:
 
         scores = []
         for op_id, dists in operator_distances.items():
+            if len(dists) < 2:
+                continue
             sorted_dists = sorted(dists)
             top_dists = sorted_dists[: min(2, len(sorted_dists))]
             score = np.mean(top_dists)
