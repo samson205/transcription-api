@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from pyannote.core import Segment
 from scipy.spatial.distance import cosine
 from sklearn.cluster import AgglomerativeClustering
 
@@ -40,18 +39,7 @@ class SpeakerMatchService:
     ) -> tuple[list[DialogueSegment], int | None]:
         audio_in_memory = self._embedding_service.load_audio(path)
         segment_metrics: list[SegmentMetric] = []
-        embeddings = {}
-        for segment in segments:
-            excerpt = Segment(segment.start, segment.end)
-            key = (segment.start, segment.end)
-            try:
-                embeddings[key] = self._embedding_service.extract_embedding(
-                    audio_in_memory, excerpt
-                )
-            except Exception:
-                logger.exception("Failed to extract embedding for segment")
-                embeddings[key] = None
-
+        embeddings = self._embedding_service.extract_embeddings_for_segments(audio_in_memory, [(s.start, s.end) for s in segments])
         best_operator, cluster_map = await self._identify_operator(
             segments, embeddings, original_filename, metric
         )
