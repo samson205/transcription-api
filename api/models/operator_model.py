@@ -28,4 +28,4 @@ class Operator(Base):
     )
 
     conversations: Mapped[list["Conversation"]] = relationship("Conversation", back_populates="operator")  # type: ignore
-    embeddings: Mapped[list["OperatorEmbedding"]] = relationship("OperatorEmbedding", back_populates="operator", cascade="all, delete-orphan") # type: ignore
+    embeddings: Mapped[list["OperatorEmbedding"]] = relationship("OperatorEmbedding", back_populates="operator", cascade="all, delete-orphan")  # type: ignore

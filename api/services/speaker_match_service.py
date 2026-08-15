@@ -39,7 +39,9 @@ class SpeakerMatchService:
     ) -> tuple[list[DialogueSegment], int | None]:
         audio_in_memory = self._embedding_service.load_audio(path)
         segment_metrics: list[SegmentMetric] = []
-        embeddings = self._embedding_service.extract_embeddings_for_segments(audio_in_memory, [(s.start, s.end) for s in segments])
+        embeddings = self._embedding_service.extract_embeddings_for_segments(
+            audio_in_memory, [(s.start, s.end) for s in segments]
+        )
         best_operator, cluster_map = await self._identify_operator(
             segments, embeddings, original_filename, metric
         )
@@ -67,7 +69,9 @@ class SpeakerMatchService:
                     resolved_role = "Неизвестный"
                     source = "skipped"
                 else:
-                    distance = self._distance_to_operator(segment_emb, operator_embeddings)
+                    distance = self._distance_to_operator(
+                        segment_emb, operator_embeddings
+                    )
                     role = cluster_map[key]
                     if distance <= settings.UNCERTAIN_BOUND:
                         resolved_role = (
@@ -85,7 +89,9 @@ class SpeakerMatchService:
                     resolved_role = "Неизвестный"
                     source = "skipped"
                 else:
-                    distance = self._distance_to_operator(segment_emb, operator_embeddings)
+                    distance = self._distance_to_operator(
+                        segment_emb, operator_embeddings
+                    )
                     source = "cosine"
                     if distance <= settings.THRESHOLD:
                         resolved_role = f"Оператор ({best_operator.name})"
@@ -355,5 +361,7 @@ class SpeakerMatchService:
         ]
         return [s for s in candidates if embeddings[(s.start, s.end)] is not None]
 
-    def _distance_to_operator(self, segment_emb: list[float], operator_embeddings: list[list[float]]) -> float:
+    def _distance_to_operator(
+        self, segment_emb: list[float], operator_embeddings: list[list[float]]
+    ) -> float:
         return min(cosine(segment_emb, ref) for ref in operator_embeddings)

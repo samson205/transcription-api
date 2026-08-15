@@ -59,12 +59,16 @@ class EmbeddingService:
 
         return np.mean(embeddings, axis=0).tolist()
 
-    def extract_embeddings_for_segments(self, audio_in_memory: dict, segments: list[tuple[float, float]]) -> dict[tuple[float, float], list[float] | None]:
+    def extract_embeddings_for_segments(
+        self, audio_in_memory: dict, segments: list[tuple[float, float]]
+    ) -> dict[tuple[float, float], list[float] | None]:
         embeddings: dict[tuple[float, float], list[float] | None] = {}
         for start, end in segments:
             key = (start, end)
             try:
-                embeddings[key] = self.extract_embedding(audio_in_memory, Segment(start, end))
+                embeddings[key] = self.extract_embedding(
+                    audio_in_memory, Segment(start, end)
+                )
             except Exception:
                 logger.exception("Failed to extract embedding for segment %s", key)
                 embeddings[key] = None

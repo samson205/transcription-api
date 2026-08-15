@@ -68,7 +68,9 @@ class OperatorRepository:
             operator.error_message = error_message
             await session.commit()
 
-    async def add_embedding(self, operator_id: int, embedding: list[float], source_filename: str | None) -> OperatorEmbedding | None:
+    async def add_embedding(
+        self, operator_id: int, embedding: list[float], source_filename: str | None
+    ) -> OperatorEmbedding | None:
         async with self._session_factory() as session:
             operator = await session.get(Operator, operator_id)
             if operator is None:
@@ -112,7 +114,9 @@ class OperatorRepository:
             result = await session.execute(
                 select(
                     Operator,
-                    OperatorEmbedding.embedding.cosine_distance(embedding).label("distance"),
+                    OperatorEmbedding.embedding.cosine_distance(embedding).label(
+                        "distance"
+                    ),
                 )
                 .join(OperatorEmbedding, OperatorEmbedding.operator_id == Operator.id)
                 .options(selectinload(Operator.embeddings))

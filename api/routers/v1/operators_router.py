@@ -69,17 +69,21 @@ async def soft_delete(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.post("/{operator_id}/embeddings", status_code=status.HTTP_202_ACCEPTED, response_model=OperatorRead)
+@router.post(
+    "/{operator_id}/embeddings",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=OperatorRead,
+)
 async def add_operator_embedding(
     operator_id: int,
     file: UploadFile = File(...),
-    service: OperatorService = Depends(get_operator_service)
+    service: OperatorService = Depends(get_operator_service),
 ):
     try:
         operator = await service.get_by_id(operator_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    
+
     try:
         tmp_path = await TempService.get_temp_file(file)
     except (UnsupportedFileType, FileTooLarge) as e:
@@ -88,5 +92,9 @@ async def add_operator_embedding(
     task = extract_operator_embedding_task.apply_async(
         args=[operator_id, str(tmp_path), file.filename]
     )
-    logger.info("operator_id=%s task_id=%s Queued for additional embedding extraction", operator_id, task.id)
+    logger.info(
+        "operator_id=%s task_id=%s Queued for additional embedding extraction",
+        operator_id,
+        task.id,
+    )
     return operator

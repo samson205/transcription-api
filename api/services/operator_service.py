@@ -23,7 +23,9 @@ class OperatorService:
             raise ValueError("Operator not found")
         return result
 
-    async def add_embedding(self, operator_id: int, embedding: list[float], source_filename: str | None) -> None:
+    async def add_embedding(
+        self, operator_id: int, embedding: list[float], source_filename: str | None
+    ) -> None:
         """Добавляет еще один эталонный эмбеддинг оператору (не перезаписывает старые)"""
         result = await self._repo.add_embedding(operator_id, embedding, source_filename)
         if not result:
