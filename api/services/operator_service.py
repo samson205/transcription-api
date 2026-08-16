@@ -23,6 +23,9 @@ class OperatorService:
             raise ValueError("Operator not found")
         return result
 
+    async def get_by_external_id(self, external_id: int) -> Operator | None:
+        return await self._repo.get_by_external_id(external_id)
+
     async def add_embedding(
         self, operator_id: int, embedding: list[float], source_filename: str | None
     ) -> None:

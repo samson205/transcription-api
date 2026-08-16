@@ -13,6 +13,9 @@ class Operator(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    external_id: Mapped[str | None] = mapped_column(
+        Integer, unique=True, nullable=True, index=True
+    )
     status: Mapped[ProcessingStatus] = mapped_column(
         ENUM(ProcessingStatus, name="processing_status"),
         nullable=False,

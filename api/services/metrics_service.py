@@ -71,7 +71,6 @@ class SegmentMetricsService(MetricsService):
                 "speaker",
                 "distance",
                 "source",
-                "method",
                 "best_operator",
             ]
         )
@@ -89,7 +88,6 @@ class SegmentMetricsService(MetricsService):
                         row.speaker,
                         round(row.distance, 4) if row.distance is not None else "",
                         row.source,
-                        row.method,
                         row.best_operator or "",
                     ]
                 )

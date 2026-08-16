@@ -1,10 +1,16 @@
 import asyncio
 import gc
+import re
 import logging
+from pathlib import Path
 
 import torch
 
 from api.core.config import settings
+
+FILENAME_PATTERN = re.compile(
+    r"^(?P<unix_ts>\d+)\.(?P<call_id>[^-]+)-(?P<operator_ext>\d{4})-(?P<random>.+)$"
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,3 +29,10 @@ def release_gpu_memory() -> None:
     gc.collect()
     if torch.cuda.is_available() and settings.DEVICE == "cuda":
         torch.cuda.empty_cache()
+
+
+def parse_call_metadata(filename: str) -> dict | None:
+    stem = Path(filename).stem
+    match = FILENAME_PATTERN.match(stem)
+    if not match:
+        return

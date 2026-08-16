@@ -27,6 +27,15 @@ class OperatorRepository:
         async with self._session_factory() as session:
             return await session.get(Operator, operator_id)
 
+    async def get_by_external_id(self, external_id: int) -> Operator | None:
+        async with self._session_factory() as session:
+            result = await session.scalars(
+                select(Operator)
+                .options(selectinload(Operator.embeddings))
+                .where(Operator.external_id == external_id)
+            )
+            return result.first()
+
     async def get_all(self) -> list[Operator]:
         async with self._session_factory() as session:
             result = await session.scalars(select(Operator).order_by(Operator.id))
