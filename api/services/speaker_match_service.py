@@ -31,7 +31,14 @@ class SpeakerMatchService:
         self._embedding_service = embedding_service
         self._metrics_service = SegmentMetricsService("export/segment_metrics.csv")
 
-    def assign_roles(self, segments: list[DialogueSegment], embeddings: dict, operator: Operator | None, original_filename: str, cluster_map: dict | None = None) -> list[DialogueSegment]:
+    def assign_roles(
+        self,
+        segments: list[DialogueSegment],
+        embeddings: dict,
+        operator: Operator | None,
+        original_filename: str,
+        cluster_map: dict | None = None,
+    ) -> list[DialogueSegment]:
         if operator is None:
             return segments
         matched_segments = []

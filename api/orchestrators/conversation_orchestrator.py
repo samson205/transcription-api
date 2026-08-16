@@ -74,21 +74,35 @@ class ConversationOrchestrator:
 
             start_embeddings_time = time.monotonic()
             audio_in_memory = self._embedding_service.load_audio(path)
-            embeddings = self._embedding_service.extract_embeddings_for_segments(audio_in_memory, [(s.start, s.end) for s in clean_segments])
-            logger.info("conversation_id=%s Calculated embeddings in %d", conversation_id, time.monotonic() - start_embeddings_time)
+            embeddings = self._embedding_service.extract_embeddings_for_segments(
+                audio_in_memory, [(s.start, s.end) for s in clean_segments]
+            )
+            logger.info(
+                "conversation_id=%s Calculated embeddings in %ds",
+                conversation_id,
+                time.monotonic() - start_embeddings_time,
+            )
 
             metadata = parse_call_metadata(original_filename)
             operator, cluster_map = None, None
             if metadata is not None:
-                operator = await self._operator_service.get_by_external_id(metadata["operator_ext"])
+                operator = await self._operator_service.get_by_external_id(
+                    metadata["operator_ext"]
+                )
                 if operator is not None:
                     metric.method = "claimed"
                     metric.best_operator = operator.name
 
             if operator is None:
-                operator, cluster_map = await self._speaker_match_service.identify_operator(clean_segments, embeddings, original_filename, metric)
+                operator, cluster_map = (
+                    await self._speaker_match_service.identify_operator(
+                        clean_segments, embeddings, original_filename, metric
+                    )
+                )
 
-            conversation = self._speaker_match_service.assign_roles(clean_segments, embeddings, operator, original_filename, cluster_map)
+            conversation = self._speaker_match_service.assign_roles(
+                clean_segments, embeddings, operator, original_filename, cluster_map
+            )
 
             result = await self._conversation_service.save_final_result(
                 conversation_id,

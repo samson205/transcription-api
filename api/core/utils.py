@@ -35,4 +35,4 @@ def parse_call_metadata(filename: str) -> dict | None:
     stem = Path(filename).stem
     match = FILENAME_PATTERN.match(stem)
     if not match:
-        return 
+        return
