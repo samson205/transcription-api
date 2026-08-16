@@ -75,4 +75,6 @@ def get_conversation_orchestrator() -> ConversationOrchestrator:
         get_speaker_match_service(),
         get_segment_aggregator(),
         get_conversation_service(),
+        get_operator_service(),
+        get_embedding_service(),
     )

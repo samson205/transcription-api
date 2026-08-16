@@ -5,6 +5,7 @@ from scipy.spatial.distance import cosine
 from sklearn.cluster import AgglomerativeClustering
 
 from api.core.config import settings
+from api.models.operator_model import Operator
 from api.services.operator_service import OperatorService
 from api.services.embedding_service import EmbeddingService
 from api.services.metrics_service import SegmentMetricsService
@@ -30,30 +31,12 @@ class SpeakerMatchService:
         self._embedding_service = embedding_service
         self._metrics_service = SegmentMetricsService("export/segment_metrics.csv")
 
-    async def match_operators(
-        self,
-        segments: list[DialogueSegment],
-        path: str,
-        original_filename: str,
-        metric: FileMetric,
-    ) -> tuple[list[DialogueSegment], int | None]:
-        audio_in_memory = self._embedding_service.load_audio(path)
-        segment_metrics: list[SegmentMetric] = []
-        embeddings = self._embedding_service.extract_embeddings_for_segments(
-            audio_in_memory, [(s.start, s.end) for s in segments]
-        )
-        best_operator, cluster_map = await self._identify_operator(
-            segments, embeddings, original_filename, metric
-        )
-        if not best_operator:
-            return segments, None
-
-        operator_embeddings = [oe.embedding for oe in best_operator.embeddings]
-        if not operator_embeddings:
-            return segments, None
-
+    def assign_roles(self, segments: list[DialogueSegment], embeddings: dict, operator: Operator | None, original_filename: str, cluster_map: dict | None = None) -> list[DialogueSegment]:
+        if operator is None:
+            return segments
         matched_segments = []
-        cluster_map = cluster_map or {}
+        segment_metrics = []
+        operator_embeddings = [oe.embedding for oe in operator.embeddings]
         for segment in segments:
             duration = segment.end - segment.start
             key = (segment.start, segment.end)
@@ -63,7 +46,7 @@ class SpeakerMatchService:
 
             if duration < 0.3:
                 resolved_role = "Неизвестный"
-            elif key in cluster_map:
+            elif cluster_map and key in cluster_map:
                 segment_emb = embeddings.get(key)
                 if segment_emb is None:
                     resolved_role = "Неизвестный"
@@ -75,7 +58,7 @@ class SpeakerMatchService:
                     role = cluster_map[key]
                     if distance <= settings.UNCERTAIN_BOUND:
                         resolved_role = (
-                            f"Оператор ({best_operator.name})"
+                            f"Оператор ({operator.name})"
                             if role == "operator"
                             else "Клиент"
                         )
@@ -94,9 +77,9 @@ class SpeakerMatchService:
                     )
                     source = "cosine"
                     if distance <= settings.THRESHOLD:
-                        resolved_role = f"Оператор ({best_operator.name})"
+                        resolved_role = f"Оператор ({operator.name})"
                     elif distance <= settings.UNCERTAIN_BOUND:
-                        resolved_role = f"Оператор ({best_operator.name}) [Неуверенно]"
+                        resolved_role = f"Оператор ({operator.name}) [Неуверенно]"
                     else:
                         resolved_role = "Клиент"
 
@@ -111,8 +94,7 @@ class SpeakerMatchService:
                     speaker=resolved_role,
                     distance=distance,
                     source=source,
-                    method=metric.method or "",
-                    best_operator=best_operator.name,
+                    best_operator=operator.name,
                 )
             )
 
@@ -122,9 +104,9 @@ class SpeakerMatchService:
         if settings.DEBUG_METRICS:
             self._metrics_service.append(segment_metrics)
 
-        return matched_segments, best_operator.id
+        return matched_segments
 
-    async def _identify_operator(
+    async def identify_operator(
         self,
         segments: list[DialogueSegment],
         embeddings: dict,

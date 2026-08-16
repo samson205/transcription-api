@@ -28,5 +28,4 @@ class SegmentMetric(BaseModel):
     speaker: str
     distance: float | None = None
     source: str  # откуда взялось решение
-    method: str
     best_operator: str | None = None
