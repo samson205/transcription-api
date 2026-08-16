@@ -23,6 +23,7 @@ class SpeakerMatchService:
 
     _MIN_CLUSTER_SHARE = 0.15
     _MIN_CLUSTER_MARGIN = 0.04
+    _MIN_SEGMENT_FOR_CLUSTERING = 10
 
     def __init__(
         self, operator_service: OperatorService, embedding_service: EmbeddingService
@@ -135,32 +136,27 @@ class SpeakerMatchService:
         original_filename: str,
         metric: FileMetric,
     ):
-        total_duration = sum(s.end - s.start for s in segments)
-        cluster_map = None
-        if total_duration <= 60 or len(segments) < 12:
+        candidates = self._get_valid_candidates(segments, embeddings)
+        metric.num_segments = len(candidates)
+        is_short_call = len(candidates) < self._MIN_SEGMENT_FOR_CLUSTERING
+        if is_short_call:
             metric.method = "simple"
             operator = await self._identify_operator_simple(
-                segments, embeddings, original_filename, metric
+                candidates, embeddings, original_filename, metric
             )
+            return operator, None
 
-        elif total_duration <= 180 or len(segments) <= 20:
-            metric.method = "cluster"
-            operator, cluster_map = await self._identify_operator_by_cluster(
-                segments, embeddings, original_filename, metric
-            )
-            if operator is None:
-                metric.method = "simple"
-                metric.error = None
-                metric.second_score = None
-                metric.margin = None
-                cluster_map = None
-                operator = await self._identify_operator_simple(
-                    segments, embeddings, original_filename, metric
-                )
-
-        else:
-            metric.method = "cluster"
-            operator, cluster_map = await self._identify_operator_by_cluster(
+        metric.method = "cluster"
+        operator, cluster_map = await self._identify_operator_by_cluster(
+            segments, embeddings, original_filename, metric
+        )
+        if operator is None:
+            metric.method = "simple_fallback"
+            metric.error = None
+            metric.second_score = None
+            metric.margin = None
+            cluster_map = None
+            operator = await self._identify_operator_simple(
                 segments, embeddings, original_filename, metric
             )
 
@@ -170,13 +166,11 @@ class SpeakerMatchService:
 
     async def _identify_operator_simple(
         self,
-        segments: list[DialogueSegment],
+        candidates: list[DialogueSegment],
         embeddings: dict,
         original_filename: str,
         metric: FileMetric,
     ):
-        candidates = self._get_valid_candidates(segments, embeddings)
-        metric.num_segments = len(candidates)
         if len(candidates) <= self._MAX_CANDIDATES:
             chunks_to_analyze = candidates
         else:
@@ -248,13 +242,11 @@ class SpeakerMatchService:
 
     async def _identify_operator_by_cluster(
         self,
-        segments: list[DialogueSegment],
+        candidates: list[DialogueSegment],
         embeddings: dict,
         original_filename: str,
         metric: FileMetric,
     ):
-        candidates = self._get_valid_candidates(segments, embeddings)
-        metric.num_segments = len(candidates)
         clusters = self._cluster_embeddings(
             candidates,
             embeddings,
@@ -265,7 +257,6 @@ class SpeakerMatchService:
             return None, None
 
         cluster_scores = []
-        total_duration = sum(s.end - s.start for s in segments)
         for cluster_id, cluster_segments in clusters.items():
             centroid = self._cluster_centroid(cluster_segments, embeddings)
             operator, distance = await self._operator_service.find_matching_operator(
@@ -274,14 +265,10 @@ class SpeakerMatchService:
             if not operator:
                 continue
 
-            cluster_duration = sum(s.end - s.start for s in cluster_segments)
-            share = cluster_duration / total_duration
-            if share < self._MIN_CLUSTER_SHARE:
-                continue
-
             if len(cluster_segments) < 3:
                 continue
 
+            cluster_duration = sum(s.end - s.start for s in cluster_segments)
             logger.info(
                 "cluster=%s operator=%s distance=%.3f duration=%.1f",
                 cluster_id,
