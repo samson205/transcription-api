@@ -9,15 +9,17 @@ from api.models.enums import ProcessingStatus
 
 class OperatorCreate(BaseModel):
     name: Annotated[str, Field(...)]
+    external_id: Annotated[int | None, Field(None)]
 
     @classmethod
-    def as_form(cls, name: Annotated[str, Form(...)]):
-        return cls(name=name)
+    def as_form(cls, name: Annotated[str, Form(...)], external_id: Annotated[int | None, Form(...)] = None):
+        return cls(name=name, external_id=external_id)
 
 
 class OperatorRead(BaseModel):
     id: Annotated[int, Field(...)]
     name: Annotated[str, Field(...)]
+    external_id: Annotated[int | None, Field(...)]
     status: Annotated[ProcessingStatus, Field(...)]
     error_message: Annotated[str | None, Field(None)]
     is_active: Annotated[bool, Field(...)]
