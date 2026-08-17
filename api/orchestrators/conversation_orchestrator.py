@@ -90,6 +90,7 @@ class ConversationOrchestrator:
                     metadata["operator_ext"]
                 )
                 if operator is not None:
+                    logger.info("converstaion_id=%s Operator found from metadata")
                     verified = await self._speaker_match_service.verify_claimed_operator(clean_segments, embeddings, operator)
                     if verified:
                         metric.method = "claimed"

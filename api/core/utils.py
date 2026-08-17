@@ -35,4 +35,10 @@ def parse_call_metadata(filename: str) -> dict | None:
     stem = Path(filename).stem
     match = FILENAME_PATTERN.match(stem)
     if not match:
-        return
+        return None
+    return {
+        "unix_ts": int(match.group("unix_ts")),
+        "call_id": int(match.group("call_id")),
+        "operator_ext": int(match.group("operator_ext")),
+    }
+    
