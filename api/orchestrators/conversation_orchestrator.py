@@ -90,8 +90,15 @@ class ConversationOrchestrator:
                     metadata["operator_ext"]
                 )
                 if operator is not None:
-                    metric.method = "claimed"
-                    metric.best_operator = operator.name
+                    verified = await self._speaker_match_service.verify_claimed_operator(clean_segments, embeddings, operator)
+                    if verified:
+                        metric.method = "claimed"
+                        metric.best_operator = operator.name
+                    else:
+                        logger.warning(
+                            "conversation_id=%s operator=%s Declared in metadata but not confirmed",
+                            conversation_id, operator.name
+                        )
 
             if operator is None:
                 operator, cluster_map = (

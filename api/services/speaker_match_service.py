@@ -113,6 +113,21 @@ class SpeakerMatchService:
 
         return matched_segments
 
+    async def verify_claimed_operator(self, segments: list[DialogueSegment], embeddings: dict, claimed_operator: Operator) -> bool:
+        candidates = self._get_valid_candidates(segments, embeddings)
+        operator_embeddings = [oe.embedding for oe in claimed_operator.embeddings]
+        matches = 0
+
+        for segment in candidates:
+            emb = embeddings.get((segment.start, segment.end))
+            if emb is None:
+                continue
+            distance = self._distance_to_operator(emb, operator_embeddings)
+            if distance <= settings.THRESHOLD:
+                matches += 1
+
+        return matches >= 2
+
     async def identify_operator(
         self,
         segments: list[DialogueSegment],
