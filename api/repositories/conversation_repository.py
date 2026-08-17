@@ -1,6 +1,6 @@
 from typing import Callable, AsyncContextManager, Any
 
-from sqlalchemy import update
+from sqlalchemy import update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models.conversation_model import Conversation
@@ -26,6 +26,16 @@ class ConversationRepository:
             await session.commit()
             await session.refresh(conversation)
             return conversation
+
+    async def get_all(self, page: int, page_size: int) -> list[Conversation]:
+        async with self._session_factory() as session:
+            result = await session.scalars(
+                select(Conversation)
+                .order_by(Conversation.id)
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
+            return list(result.all())
 
     async def get_by_id(self, conversation_id: int) -> Conversation | None:
         async with self._session_factory() as session:

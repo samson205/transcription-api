@@ -18,6 +18,9 @@ class ConversationService:
             filename,
         )
 
+    async def get_all(self, page: int, page_size: int) -> list[Conversation]:
+        return await self._repository.get_all(page, page_size)
+
     async def get_by_id(self, conversation_id: int) -> Conversation:
         result = await self._repository.get_by_id(conversation_id)
         if not result:

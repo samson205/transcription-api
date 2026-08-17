@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status, Query
 
 from api.core.dependencies import get_conversation_service
 from api.schemas.transcription import ConversationResponse, BaseConversationResponse
@@ -39,6 +39,15 @@ async def transcribe(
         file.filename,
     )
     return conversation
+
+
+@router.get("/", response_model=list[ConversationResponse])
+async def get_conversations(
+    page: int = Query(1),
+    page_size: int = Query(20, le=50),
+    service: ConversationService = Depends(get_conversation_service),
+):
+    return await service.get_all(page, page_size)
 
 
 @router.get("/{conversation_id}", response_model=ConversationResponse)
