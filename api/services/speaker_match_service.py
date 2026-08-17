@@ -137,7 +137,6 @@ class SpeakerMatchService:
         metric: FileMetric,
     ):
         candidates = self._get_valid_candidates(segments, embeddings)
-        metric.num_segments = len(candidates)
         is_short_call = len(candidates) < self._MIN_SEGMENT_FOR_CLUSTERING
         if is_short_call:
             metric.method = "simple"
