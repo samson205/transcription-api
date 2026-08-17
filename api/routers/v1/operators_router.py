@@ -5,7 +5,7 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 from api.services.operator_service import OperatorService
 from api.services.temp_service import TempService, UnsupportedFileType, FileTooLarge
 from api.core.dependencies import get_operator_service
-from api.schemas.operator import OperatorCreate, OperatorRead
+from api.schemas.operator import OperatorCreate, OperatorRead, OperatorUpdate
 from api.tasks.operator_tasks import extract_operator_embedding_task
 
 logger = logging.getLogger(__name__)
@@ -55,6 +55,18 @@ async def get_operator_by_id(
         return await service.get_by_id(operator_id)
     except ValueError as e:
         logger.warning("operator_id=%s Not found", operator_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.patch("/{operator_id}", response_model=OperatorRead)
+async def update_operator_info(
+    operator_id: int,
+    data: OperatorUpdate,
+    service: OperatorService = Depends(get_operator_service),
+):
+    try:
+        return await service.update_info(operator_id, data)
+    except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 

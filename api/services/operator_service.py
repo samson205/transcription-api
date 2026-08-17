@@ -1,7 +1,7 @@
 from api.repositories.operator_repository import OperatorRepository
 from api.models.operator_model import Operator
 from api.models.enums import ProcessingStatus
-from api.schemas.operator import OperatorCreate
+from api.schemas.operator import OperatorCreate, OperatorUpdate
 
 
 class OperatorService:
@@ -10,7 +10,7 @@ class OperatorService:
 
     async def register(self, data: OperatorCreate) -> Operator:
         """Создает нового оператора в БД"""
-        return await self._repo.create(data.name)
+        return await self._repo.create(data.name, data.external_id)
 
     async def get_all(self) -> list[Operator]:
         """Получает всех операторов"""
@@ -40,6 +40,10 @@ class OperatorService:
     ):
         """Обновляет статус обработки оператора"""
         await self._repo.update_status(operator_id, status, error_message)
+
+    async def update_info(self, operator_id: int, data: OperatorUpdate) -> Operator:
+        upd_data = data.model_dump(exclude_unset=True)
+        return await self._repo.update(operator_id, upd_data)
 
     async def soft_delete(self, operator_id: int) -> None:
         """Делает поле is_active = False (мягкое удаление)"""

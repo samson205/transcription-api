@@ -26,3 +26,8 @@ class OperatorRead(BaseModel):
     created_at: Annotated[datetime, Field(...)]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class OperatorUpdate(BaseModel):
+    name: Annotated[str | None, Field(None)]
+    external_id: Annotated[int | None, Field(None)]

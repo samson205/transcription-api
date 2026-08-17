@@ -15,7 +15,7 @@ class OperatorRepository:
     ) -> None:
         self._session_factory = session_factory
 
-    async def create(self, name: str) -> Operator:
+    async def create(self, name: str, external_id: int | None) -> Operator:
         async with self._session_factory() as session:
             operator = Operator(name=name, status=ProcessingStatus.PENDING)
             session.add(operator)
@@ -77,6 +77,19 @@ class OperatorRepository:
             operator.error_message = error_message
             await session.commit()
 
+    async def update(self, operator_id: int, upd_data: dict) -> Operator:
+        async with self._session_factory() as session:
+            operator = await session.get(Operator, operator_id)
+            if operator is None:
+                raise ValueError("Operator not found")
+
+            for key, value in upd_data.items():
+                setattr(operator, key, value)
+
+            await session.commit()
+            await session.refresh(operator)
+            return operator
+            
     async def add_embedding(
         self, operator_id: int, embedding: list[float], source_filename: str | None
     ) -> OperatorEmbedding | None:
