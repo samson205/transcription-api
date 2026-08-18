@@ -17,7 +17,7 @@ class OperatorRepository:
 
     async def create(self, name: str, external_id: int | None) -> Operator:
         async with self._session_factory() as session:
-            operator = Operator(name=name, status=ProcessingStatus.PENDING)
+            operator = Operator(name=name, external_id=external_id, status=ProcessingStatus.PENDING)
             session.add(operator)
             await session.commit()
             await session.refresh(operator)
