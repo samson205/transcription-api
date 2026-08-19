@@ -124,7 +124,7 @@ class SpeakerMatchService:
             if emb is None:
                 continue
             distance = self._distance_to_operator(emb, operator_embeddings)
-            if distance <= settings.THRESHOLD:
+            if distance <= settings.UNCERTAIN_BOUND:
                 matches += 1
 
         return matches >= 2

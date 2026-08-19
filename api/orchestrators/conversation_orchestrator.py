@@ -86,21 +86,39 @@ class ConversationOrchestrator:
             metadata = parse_call_metadata(original_filename)
             operator, cluster_map = None, None
             if metadata is not None:
-                operator = await self._operator_service.get_by_external_id(
+                claimed_operator = await self._operator_service.get_by_external_id(
                     metadata["operator_ext"]
                 )
-                if operator is not None:
-                    logger.info("converstaion_id=%s Operator found from metadata")
-                    metric.num_segments = len(clean_segments)
-                    metric.method = "claimed"
-                    metric.best_operator = operator.name
-                    verified = await self._speaker_match_service.verify_claimed_operator(clean_segments, embeddings, operator)
-                    if not verified:
-                        logger.warning(
-                            "conversation_id=%s operator=%s Declared in metadata but not confirmed",
-                            conversation_id, operator.name
+                if claimed_operator is not None:
+                    verified = (
+                        await self._speaker_match_service.verify_claimed_operator(
+                            clean_segments, embeddings, claimed_operator
                         )
-                        metric.error = "warning: not verified"
+                    )
+                    total_duration = sum(s.end - s.start for s in clean_segments)
+
+                    if verified:
+                        metric.num_segments = len(clean_segments)
+                        metric.method = "claimed"
+                        metric.best_operator = claimed_operator.name
+                        operator = claimed_operator
+                        logger.info("converstaion_id=%s Operator found from metadata")
+                    elif total_duration < 60:
+                        metric.num_segments = len(clean_segments)
+                        metric.method = "claimed_unverified_short"
+                        metric.best_operator = claimed_operator.name
+                        operator = claimed_operator
+                        logger.info(
+                            "conversation_id=%s operator=%s Not confirmed, but the call was short - trust the metadata",
+                            conversation_id,
+                            claimed_operator.name,
+                        )
+                    else:
+                        logger.warning(
+                            "conversation_id=%s operator=%s Not confirmed - starting voice search",
+                            conversation_id,
+                            claimed_operator.name,
+                        )
 
             if operator is None:
                 operator, cluster_map = (
