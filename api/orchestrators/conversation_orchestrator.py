@@ -66,6 +66,7 @@ class ConversationOrchestrator:
             clean_segments = self._segment_aggregator.merge_by_sentences(
                 transcription.segments
             )
+            metric.num_segments = len(clean_segments)
             logger.info(
                 "conversation_id=%s Aggregated into %d sentences",
                 conversation_id,
@@ -98,13 +99,11 @@ class ConversationOrchestrator:
                     total_duration = sum(s.end - s.start for s in clean_segments)
 
                     if verified:
-                        metric.num_segments = len(clean_segments)
                         metric.method = "claimed"
                         metric.best_operator = claimed_operator.name
                         operator = claimed_operator
                         logger.info("converstaion_id=%s Operator found from metadata")
                     elif total_duration < 60:
-                        metric.num_segments = len(clean_segments)
                         metric.method = "claimed_unverified_short"
                         metric.best_operator = claimed_operator.name
                         operator = claimed_operator
