@@ -1,0 +1,46 @@
+<!-- api/templates/conversations_list.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Звонки</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem; background: #f7f7f8; color: #1a1a1a; }
+  table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  th, td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+  th { background: #fafafa; }
+  tr:hover { background: #f5f9ff; }
+  a { color: #2563eb; text-decoration: none; }
+  .status { padding: 2px 8px; border-radius: 10px; font-size: 0.78rem; }
+  .status-SUCCESS { background: #dcfce7; color: #166534; }
+  .status-FAILURE { background: #fee2e2; color: #991b1b; }
+  .status-PENDING, .status-PROCESSING { background: #fef9c3; color: #854d0e; }
+  .pager { margin-top: 1rem; }
+  .pager a { margin-right: 1rem; }
+</style>
+</head>
+<body>
+  <h1>Звонки</h1>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Файл</th><th>Оператор</th><th>Статус</th><th>Длительность</th><th>Дата</th></tr>
+    </thead>
+    <tbody>
+      {% for c in conversations %}
+      <tr>
+        <td>{{ c.id }}</td>
+        <td><a href="/viewer/{{ c.id }}">{{ c.filename }}</a></td>
+        <td>{{ c.operator.name if c.operator else "—" }}</td>
+        <td><span class="status status-{{ c.status.value }}">{{ c.status.value }}</span></td>
+        <td>{{ "%.0f"|format(c.duration) ~ " сек" if c.duration else "—" }}</td>
+        <td>{{ c.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="pager">
+    {% if page > 1 %}<a href="/viewer/?page={{ page - 1 }}">← Назад</a>{% endif %}
+    <a href="/viewer/?page={{ page + 1 }}">Вперёд →</a>
+  </div>
+</body>
+</html>
