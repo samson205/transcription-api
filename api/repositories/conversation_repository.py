@@ -1,6 +1,7 @@
 from typing import Callable, AsyncContextManager, Any
 
 from sqlalchemy import update, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models.conversation_model import Conversation
@@ -31,6 +32,7 @@ class ConversationRepository:
         async with self._session_factory() as session:
             result = await session.scalars(
                 select(Conversation)
+                .options(selectinload(Conversation.operator))
                 .order_by(Conversation.id)
                 .offset((page - 1) * page_size)
                 .limit(page_size)
