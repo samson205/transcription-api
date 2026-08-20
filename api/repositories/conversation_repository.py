@@ -41,7 +41,12 @@ class ConversationRepository:
 
     async def get_by_id(self, conversation_id: int) -> Conversation | None:
         async with self._session_factory() as session:
-            return await session.get(Conversation, conversation_id)
+            result = await session.scalars(
+                select(Conversation)
+                .options(selectinload(Conversation.operator))
+                .where(Conversation.id == conversation_id)
+            )
+            return result.first()
 
     async def update_status(
         self, conversation_id: int, status: ProcessingStatus, error_message: str | None
