@@ -29,7 +29,7 @@
       {% for c in conversations %}
       <tr>
         <td>{{ c.id }}</td>
-        <td><a href="/viewer/{{ c.id }}">{{ c.filename }}</a></td>
+        <td><a href="/api/v1/viewer/{{ c.id }}">{{ c.filename }}</a></td>
         <td>{{ c.operator.name if c.operator else "—" }}</td>
         <td><span class="status status-{{ c.status.value }}">{{ c.status.value }}</span></td>
         <td>{{ "%.0f"|format(c.duration) ~ " сек" if c.duration else "—" }}</td>
@@ -39,8 +39,8 @@
     </tbody>
   </table>
   <div class="pager">
-    {% if page > 1 %}<a href="/viewer/?page={{ page - 1 }}">← Назад</a>{% endif %}
-    <a href="/viewer/?page={{ page + 1 }}">Вперёд →</a>
+    {% if page > 1 %}<a href="/api/v1/viewer/?page={{ page - 1 }}">← Назад</a>{% endif %}
+    <a href="/api/v1/viewer/?page={{ page + 1 }}">Вперёд →</a>
   </div>
 </body>
 </html>
