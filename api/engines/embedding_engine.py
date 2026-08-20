@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import torch
+import numpy as np
 from pyannote.core import Segment
 from pyannote.audio import Model, Inference
 from huggingface_hub import snapshot_download
@@ -36,6 +37,11 @@ class EmbeddingEngine:
 
     def extract_embedding(self, audio_in_memory: dict, excerpt: Segment | None):
         inference = self._load_inference()
-        if excerpt is None:
-            return inference(audio_in_memory)
-        return inference.crop(audio_in_memory, excerpt)
+        embedding = (
+            inference(audio_in_memory) if excerpt is None else inference.crop(audio_in_memory, excerpt)
+        )
+        arr = np.asarray(embedding)
+        if arr.ndim > 1:
+            arr = arr.mean(axis=0)
+
+        return arr
