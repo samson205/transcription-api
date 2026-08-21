@@ -1,4 +1,5 @@
-# api/routers/viewer_router.py
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -8,6 +9,7 @@ from api.services.conversation_service import ConversationService
 
 router = APIRouter(prefix="/viewer", tags=["Viewer"])
 templates = Jinja2Templates(directory="api/templates")
+templates.env.filters["urlencode"] = quote
 
 
 @router.get("/", response_class=HTMLResponse)

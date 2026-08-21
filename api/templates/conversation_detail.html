@@ -6,9 +6,11 @@
 <title>{{ conversation.filename }}</title>
 <style>
   body { font-family: system-ui, sans-serif; margin: 2rem; background: #f7f7f8; max-width: 800px; }
-  .meta { color: #666; font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .meta { color: #666; font-size: 0.85rem; margin-bottom: 1rem; }
+  .player { margin-bottom: 1.5rem; }
+  .player audio { width: 100%; }
   .segment { display: flex; gap: 1rem; padding: 0.6rem 0; border-bottom: 1px solid #eee; }
-  .time { color: #999; font-size: 0.78rem; width: 90px; flex-shrink: 0; padding-top: 0.15rem; }
+  .time { color: #999; font-size: 0.78rem; width: 110px; flex-shrink: 0; padding-top: 0.15rem; }
   .bubble { flex: 1; padding: 0.5rem 0.8rem; border-radius: 8px; }
   .speaker { font-weight: 600; font-size: 0.8rem; margin-bottom: 0.2rem; }
   .role-operator { background: #eff6ff; } .role-operator .speaker { color: #1d4ed8; }
@@ -26,12 +28,20 @@
     {% if conversation.error_message %} · Ошибка: {{ conversation.error_message }}{% endif %}
   </div>
 
+  <div class="player">
+    <audio controls preload="none">
+      <source src="/audio/{{ conversation.filename | urlencode }}">
+      Ваш браузер не поддерживает аудио-плеер.
+    </audio>
+    <div><a href="/audio/{{ conversation.filename | urlencode }}" download>Скачать файл</a></div>
+  </div>
+
   {% for s in (conversation.segments or []) %}
     {% set role_class = "role-client" %}
     {% if "Оператор" in s.speaker %}{% set role_class = "role-operator" %}{% endif %}
     {% if s.speaker == "Неизвестный" %}{% set role_class = "role-unknown" %}{% endif %}
     <div class="segment">
-      <div class="time">{{ "%.1f"|format(s.start) }}s</div>
+      <div class="time">{{ "%.1f"|format(s.start) }}s – {{ "%.1f"|format(s.end) }}s</div>
       <div class="bubble {{ role_class }}">
         <div class="speaker">{{ s.speaker }}</div>
         <div>{{ s.text }}</div>

@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     BASE_DIR: Path = Path(__file__).resolve().parents[2]
     TEMP_DIR: Path = BASE_DIR / "temp"
+    AUDIO_DIR: Path = Path("")
     MODELS_DIR: Path = BASE_DIR / "ml_models"
 
     HF_TOKEN: str = ""
