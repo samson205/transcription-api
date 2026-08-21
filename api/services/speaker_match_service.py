@@ -147,7 +147,7 @@ class SpeakerMatchService:
 
         metric.method = "cluster"
         operator, cluster_map = await self._identify_operator_by_cluster(
-            segments, embeddings, original_filename, metric
+            candidates, embeddings, original_filename, metric
         )
         if operator is None:
             metric.method = "simple_fallback"
@@ -156,7 +156,7 @@ class SpeakerMatchService:
             metric.margin = None
             cluster_map = None
             operator = await self._identify_operator_simple(
-                segments, embeddings, original_filename, metric
+                candidates, embeddings, original_filename, metric
             )
 
         if operator is None:

@@ -26,7 +26,6 @@ class EmbeddingService:
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
 
-        # waveform = self._normalize_loudness(waveform, target_rms=0.05)
         waveform = self._compress_dynamic_range(waveform)
 
         return {"waveform": waveform, "sample_rate": sample_rate}
@@ -43,52 +42,81 @@ class EmbeddingService:
         audio_in_memory = self.load_audio(path)
         duration = audio_in_memory["waveform"].shape[1] / audio_in_memory["sample_rate"]
 
-        if duration < window:
-            return self.extract_embedding(audio_in_memory, excerpt=None)
-
-        embeddings = []
-        for excerpt in self._sliding_windows(duration, window, step):
-            if self._is_silent(audio_in_memory, excerpt=excerpt):
-                continue
-            embeddings.append(self.extract_embedding(audio_in_memory, excerpt=excerpt))
+        embeddings = self._extract_window_embeddings(audio_in_memory, 0, duration, window, step)
 
         if not embeddings:
             raise ValueError(
-                f"No non-silent windwos found in {path} - cannot build reference embedding"
+                f"No non-silent windows found in {path} - cannot build reference embedding"
             )
 
-        return np.mean(embeddings, axis=0).tolist()
+        averaged = np.mean(embeddings, axis=0)
+        norm = np.linalg.norm(averaged)
+        if norm > 1e-8:
+            averaged /= norm
+
+        return averaged.tolist()
 
     def extract_embeddings_for_segments(
-        self, audio_in_memory: dict, segments: list[tuple[float, float]]
+        self, audio_in_memory: dict, segments: list[tuple[float, float]], averaged: bool = False, window: float = 2.0, step: float = 1.0
     ) -> dict[tuple[float, float], list[float] | None]:
         embeddings: dict[tuple[float, float], list[float] | None] = {}
         for start, end in segments:
             key = (start, end)
+
             try:
-                embeddings[key] = self.extract_embedding(
-                    audio_in_memory, Segment(start, end)
-                )
+                if averaged:
+                    embeddings[key] = self.extract_averaged_segment_embedding(
+                        audio_in_memory, start, end, window, step,
+                    )
+                else:
+                    embeddings[key] = self.extract_embedding(
+                        audio_in_memory, Segment(start, end)
+                    )
+
+            except ValueError as e:
+                logger.warning(str(e))
+                embeddings[key] = None
+
             except Exception:
                 logger.exception("Failed to extract embedding for segment %s", key)
                 embeddings[key] = None
+
         return embeddings
 
-    def _normalize_loudness(
-        self, waveform: torch.Tensor, target_rms: float
-    ) -> torch.Tensor:
-        current_rms = torch.sqrt(torch.mean(waveform**2))
-        if current_rms < 1e-8:
-            return waveform
+    def extract_averaged_segment_embedding(self, audio_in_memory: dict, start: float, end: float, window: float = 2.0, step: float = 1.0) -> list[float]:
+        embeddings = self._extract_window_embeddings(audio_in_memory, start, end, window, step)
+        if not embeddings:
+            raise ValueError(f"No non-silent windows found in segment {start}-{end}")
 
-        gain = target_rms / current_rms
-        normalized = waveform * gain
+        averaged = np.mean(embeddings, axis=0)
+        norm = np.linalg.norm(averaged)
+        if norm > 1e-8:
+            averaged /= norm
 
-        peak = normalized.abs().max()
-        if peak > 1.0:
-            normalized = normalized / peak
+        return averaged.tolist()
 
-        return normalized
+    def _extract_window_embeddings(self, audio_in_memory: dict, start: float, end: float, window: float = 2.0, step: float = 1.0) -> list[list[float]]:
+        embeddings = []
+        duration = end - start
+
+        if duration <= 0:
+            raise ValueError(f"Invalid segment: {start}-{end}")
+
+        if duration <= window:
+            if self._is_silent(audio_in_memory, Segment(start, end)):
+                return embeddings
+
+            return [self.extract_embedding(audio_in_memory, Segment(start, end))]
+
+        for relative_window in self._sliding_windows(duration, window, step):
+            excerpt = Segment(start + relative_window.start, start + relative_window.end)
+
+            if self._is_silent(audio_in_memory, excerpt):
+                continue
+
+            embeddings.append(self.extract_embedding(audio_in_memory, excerpt))
+
+        return embeddings
 
     def _compress_dynamic_range(
         self, waveform: torch.Tensor, threshold: float = 0.1, ratio: float = 4.0

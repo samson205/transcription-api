@@ -76,7 +76,7 @@ class ConversationOrchestrator:
             start_embeddings_time = time.monotonic()
             audio_in_memory = self._embedding_service.load_audio(path)
             embeddings = self._embedding_service.extract_embeddings_for_segments(
-                audio_in_memory, [(s.start, s.end) for s in clean_segments]
+                audio_in_memory, [(s.start, s.end) for s in clean_segments], averaged=settings.AVG_EMBEDDINGS
             )
             logger.info(
                 "conversation_id=%s Calculated embeddings in %ds",
@@ -102,7 +102,7 @@ class ConversationOrchestrator:
                         metric.method = "claimed"
                         metric.best_operator = claimed_operator.name
                         operator = claimed_operator
-                        logger.info("converstaion_id=%s Operator found from metadata")
+                        logger.info("converstaion_id=%s Operator found from metadata", conversation_id)
                     elif total_duration < 60:
                         metric.method = "claimed_unverified_short"
                         metric.best_operator = claimed_operator.name
