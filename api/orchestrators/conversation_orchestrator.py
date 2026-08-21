@@ -102,7 +102,7 @@ class ConversationOrchestrator:
                         metric.method = "claimed"
                         metric.best_operator = claimed_operator.name
                         operator = claimed_operator
-                        logger.info("converstaion_id=%s Operator found from metadata")
+                        logger.info("converstaion_id=%s Operator found from metadata", conversation_id)
                     elif total_duration < 60:
                         metric.method = "claimed_unverified_short"
                         metric.best_operator = claimed_operator.name
