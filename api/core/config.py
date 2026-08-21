@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     LOCAL_FILES_ONLY: bool = False
     WORD_TIMESTAMPS: bool = False
 
+    AVG_EMBEDDINGS: bool = False
+
     EXTENSIONS: set[str] = {".mp3", ".wav", ".ogg"}
     MAX_UPLOAD_SIZE_BYTES: int = 100 * 1024 * 1024
 
