@@ -76,7 +76,7 @@ class ConversationOrchestrator:
             start_embeddings_time = time.monotonic()
             audio_in_memory = self._embedding_service.load_audio(path)
             embeddings = self._embedding_service.extract_embeddings_for_segments(
-                audio_in_memory, [(s.start, s.end) for s in clean_segments]
+                audio_in_memory, [(s.start, s.end) for s in clean_segments], averaged=True
             )
             logger.info(
                 "conversation_id=%s Calculated embeddings in %ds",
